@@ -48,25 +48,23 @@ const items = computed(() => {
 
 <template>
   <nav dir="ltr" class="flex flex-nowrap items-center justify-center gap-1 sm:gap-3" aria-label="صفحه‌بندی">
-    <button
-      type="button"
-      class="flex size-8 shrink-0 items-center justify-center text-lg text-white/50 disabled:cursor-default"
+    <BaseButton
+      variant="ghost"
       :disabled="page === 1"
       aria-label="صفحه اول"
       @click="emit('change', 1)"
     >
       «
-    </button>
+    </BaseButton>
 
-    <button
-      type="button"
-      class="flex size-8 shrink-0 items-center justify-center text-lg text-white/50 disabled:cursor-default"
+    <BaseButton
+      variant="ghost"
       :disabled="page === 1"
       aria-label="صفحه قبل"
       @click="emit('change', page - 1)"
     >
       ‹
-    </button>
+    </BaseButton>
 
     <template v-for="item in items" :key="`${item.type}-${item.value}`">
       <span
@@ -75,36 +73,33 @@ const items = computed(() => {
       >
         ...
       </span>
-      <button
+      <BaseButton
         v-else
-        type="button"
-        class="flex size-8 shrink-0 items-center justify-center rounded-full text-sm"
-        :class="item.value === page ? 'bg-[#F0B90B] font-bold text-ink' : 'text-white/50'"
+        variant="page"
+        :active="item.value === page"
         :aria-current="item.value === page ? 'page' : undefined"
         @click="emit('change', Number(item.value))"
       >
         {{ item.value }}
-      </button>
+      </BaseButton>
     </template>
 
-    <button
-      type="button"
-      class="flex size-8 shrink-0 items-center justify-center text-lg text-white/50 disabled:cursor-default"
+    <BaseButton
+      variant="ghost"
       :disabled="page === pageCount"
       aria-label="صفحه بعد"
       @click="emit('change', page + 1)"
     >
       ›
-    </button>
+    </BaseButton>
 
-    <button
-      type="button"
-      class="flex size-8 shrink-0 items-center justify-center text-lg text-white/50 disabled:cursor-default"
+    <BaseButton
+      variant="ghost"
       :disabled="page === pageCount"
       aria-label="صفحه آخر"
       @click="emit('change', pageCount)"
     >
       »
-    </button>
+    </BaseButton>
   </nav>
 </template>
