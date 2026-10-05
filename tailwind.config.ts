@@ -15,6 +15,11 @@ export default {
       fontFamily: {
         sans: ['Vazirmatn', 'Tahoma', 'sans-serif'],
       },
+      colors: {
+        ink: '#141414',
+        panel: '#2a2a2a',
+        accent: '#f5c518',
+      },
     },
   },
 } satisfies Config
