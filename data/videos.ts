@@ -1,0 +1,115 @@
+import type { VideoDetail, VideoPage, VideoSummary } from '../types/video'
+
+const featuredVideo = {
+  uid: 'td0001',
+  title: 'آموزش اهرم آسان در صرافی تبدیل',
+  posterUrl: '',
+  durationSeconds: 517,
+  visitCount: 537,
+  publishedAtLabel: '7 مهر 1405',
+} satisfies VideoSummary
+
+const moreVideos = [
+  {
+    uid: 'td0002',
+    title: 'خرید تتر در صرافی تبدیل',
+    posterUrl: '',
+    durationSeconds: 428,
+    visitCount: 2410,
+    publishedAtLabel: '2 مهر 1405',
+  },
+  {
+    uid: 'td0003',
+    title: 'راهنمای نصب تراست ولت',
+    posterUrl: '',
+    durationSeconds: 792,
+    visitCount: 18640,
+    publishedAtLabel: '28 شهریور 1405',
+  },
+  {
+    uid: 'td0004',
+    title: 'انتقال ارز از کوینکس به تبدیل',
+    posterUrl: '',
+    durationSeconds: 364,
+    visitCount: 920,
+    publishedAtLabel: '21 شهریور 1405',
+  },
+  {
+    uid: 'td0005',
+    title: 'آموزش واریز تومان',
+    posterUrl: '',
+    durationSeconds: 255,
+    visitCount: 4302,
+    publishedAtLabel: '15 شهریور 1405',
+  },
+  {
+    uid: 'td0006',
+    title: 'فروش بیت‌کوین در بازار تومانی',
+    posterUrl: '',
+    durationSeconds: 610,
+    visitCount: 1577,
+    publishedAtLabel: '9 شهریور 1405',
+  },
+  {
+    uid: 'td0007',
+    title: 'معرفی کیف پول امن برای ارز دیجیتال',
+    posterUrl: '',
+    durationSeconds: 845,
+    visitCount: 3004,
+    publishedAtLabel: '1 شهریور 1405',
+  },
+  {
+    uid: 'td0008',
+    title: 'آموزش معامله اسپات',
+    posterUrl: '',
+    durationSeconds: 990,
+    visitCount: 812,
+    publishedAtLabel: '25 مرداد 1405',
+  },
+  {
+    uid: 'td0009',
+    title: 'حد سود و حد ضرر در معامله',
+    posterUrl: '',
+    durationSeconds: 473,
+    visitCount: 1290,
+    publishedAtLabel: '18 مرداد 1405',
+  },
+  {
+    uid: 'td0010',
+    title: 'احراز هویت در صرافی تبدیل',
+    posterUrl: '',
+    durationSeconds: 312,
+    visitCount: 6540,
+    publishedAtLabel: '11 مرداد 1405',
+  },
+  {
+    uid: 'td0011',
+    title: 'کارمزد معاملات چطور محاسبه می‌شود',
+    posterUrl: '',
+    durationSeconds: 198,
+    visitCount: 744,
+    publishedAtLabel: '4 مرداد 1405',
+  },
+  {
+    uid: 'td0012',
+    title: 'برداشت ارز دیجیتال به کیف پول شخصی',
+    posterUrl: '',
+    durationSeconds: 556,
+    visitCount: 2108,
+    publishedAtLabel: '28 تیر 1405',
+  },
+] satisfies VideoSummary[]
+
+export const videoPageFixture = {
+  items: [featuredVideo, ...moreVideos],
+  page: 1,
+  perPage: 12,
+  totalCount: 12,
+} satisfies VideoPage
+
+export const videoDetailFixture = {
+  ...featuredVideo,
+  description:
+    'در این ویدیو با اهرم آسان صرافی تبدیل آشنا می‌شوید و نحوه باز کردن معامله، تعیین حد ضرر و بستن موقعیت را مرور می‌کنیم.',
+  senderName: 'صرافی تبدیل',
+} satisfies VideoDetail
