@@ -5,11 +5,12 @@ export interface VideoSummary {
   durationSeconds: number
   visitCount: number
   publishedAtLabel: string
+  senderName: string
+  profilePhotoUrl: string
 }
 
 export interface VideoDetail extends VideoSummary {
   description: string
-  senderName: string
 }
 
 export interface VideoPage {

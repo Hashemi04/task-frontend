@@ -7,6 +7,8 @@ const featuredVideo = {
   durationSeconds: 517,
   visitCount: 537,
   publishedAtLabel: '7 مهر 1405',
+  senderName: 'صرافی تبدیل  |  Tabdeal.org',
+  profilePhotoUrl: 'https://static.cdn.asset.aparat.com/profile-photo/8459674-897089-m.jpg',
 } satisfies VideoSummary
 
 const moreVideos = [
@@ -17,6 +19,8 @@ const moreVideos = [
     durationSeconds: 428,
     visitCount: 2410,
     publishedAtLabel: '2 مهر 1405',
+    senderName: 'صرافی تبدیل  |  Tabdeal.org',
+    profilePhotoUrl: 'https://static.cdn.asset.aparat.com/profile-photo/8459674-897089-m.jpg',
   },
   {
     uid: 'td0003',
@@ -25,6 +29,8 @@ const moreVideos = [
     durationSeconds: 792,
     visitCount: 18640,
     publishedAtLabel: '28 شهریور 1405',
+    senderName: 'صرافی تبدیل  |  Tabdeal.org',
+    profilePhotoUrl: 'https://static.cdn.asset.aparat.com/profile-photo/8459674-897089-m.jpg',
   },
   {
     uid: 'td0004',
@@ -33,6 +39,8 @@ const moreVideos = [
     durationSeconds: 364,
     visitCount: 920,
     publishedAtLabel: '21 شهریور 1405',
+    senderName: 'صرافی تبدیل  |  Tabdeal.org',
+    profilePhotoUrl: 'https://static.cdn.asset.aparat.com/profile-photo/8459674-897089-m.jpg',
   },
   {
     uid: 'td0005',
@@ -41,6 +49,8 @@ const moreVideos = [
     durationSeconds: 255,
     visitCount: 4302,
     publishedAtLabel: '15 شهریور 1405',
+    senderName: 'صرافی تبدیل  |  Tabdeal.org',
+    profilePhotoUrl: 'https://static.cdn.asset.aparat.com/profile-photo/8459674-897089-m.jpg',
   },
   {
     uid: 'td0006',
@@ -49,6 +59,8 @@ const moreVideos = [
     durationSeconds: 610,
     visitCount: 1577,
     publishedAtLabel: '9 شهریور 1405',
+    senderName: 'صرافی تبدیل  |  Tabdeal.org',
+    profilePhotoUrl: 'https://static.cdn.asset.aparat.com/profile-photo/8459674-897089-m.jpg',
   },
   {
     uid: 'td0007',
@@ -57,6 +69,8 @@ const moreVideos = [
     durationSeconds: 845,
     visitCount: 3004,
     publishedAtLabel: '1 شهریور 1405',
+    senderName: 'صرافی تبدیل  |  Tabdeal.org',
+    profilePhotoUrl: 'https://static.cdn.asset.aparat.com/profile-photo/8459674-897089-m.jpg',
   },
   {
     uid: 'td0008',
@@ -65,6 +79,8 @@ const moreVideos = [
     durationSeconds: 990,
     visitCount: 812,
     publishedAtLabel: '25 مرداد 1405',
+    senderName: 'صرافی تبدیل  |  Tabdeal.org',
+    profilePhotoUrl: 'https://static.cdn.asset.aparat.com/profile-photo/8459674-897089-m.jpg',
   },
   {
     uid: 'td0009',
@@ -73,6 +89,8 @@ const moreVideos = [
     durationSeconds: 473,
     visitCount: 1290,
     publishedAtLabel: '18 مرداد 1405',
+    senderName: 'صرافی تبدیل  |  Tabdeal.org',
+    profilePhotoUrl: 'https://static.cdn.asset.aparat.com/profile-photo/8459674-897089-m.jpg',
   },
   {
     uid: 'td0010',
@@ -81,6 +99,8 @@ const moreVideos = [
     durationSeconds: 312,
     visitCount: 6540,
     publishedAtLabel: '11 مرداد 1405',
+    senderName: 'صرافی تبدیل  |  Tabdeal.org',
+    profilePhotoUrl: 'https://static.cdn.asset.aparat.com/profile-photo/8459674-897089-m.jpg',
   },
   {
     uid: 'td0011',
@@ -89,6 +109,8 @@ const moreVideos = [
     durationSeconds: 198,
     visitCount: 744,
     publishedAtLabel: '4 مرداد 1405',
+    senderName: 'صرافی تبدیل  |  Tabdeal.org',
+    profilePhotoUrl: 'https://static.cdn.asset.aparat.com/profile-photo/8459674-897089-m.jpg',
   },
   {
     uid: 'td0012',
@@ -97,6 +119,8 @@ const moreVideos = [
     durationSeconds: 556,
     visitCount: 2108,
     publishedAtLabel: '28 تیر 1405',
+    senderName: 'صرافی تبدیل  |  Tabdeal.org',
+    profilePhotoUrl: 'https://static.cdn.asset.aparat.com/profile-photo/8459674-897089-m.jpg',
   },
 ] satisfies VideoSummary[]
 
@@ -111,5 +135,4 @@ export const videoDetailFixture = {
   ...featuredVideo,
   description:
     'در این ویدیو با اهرم آسان صرافی تبدیل آشنا می‌شوید و نحوه باز کردن معامله، تعیین حد ضرر و بستن موقعیت را مرور می‌کنیم.',
-  senderName: 'صرافی تبدیل',
 } satisfies VideoDetail
