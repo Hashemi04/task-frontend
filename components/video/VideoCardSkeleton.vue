@@ -1,3 +1,4 @@
+<!-- loading state for one video card -->
 <template>
   <div class="rounded-lg bg-[#2C2E30] p-3" aria-hidden="true">
     <div class="aspect-video animate-pulse rounded bg-white/10" />
