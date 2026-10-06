@@ -43,12 +43,9 @@ function onSubmit() {
           autocomplete="off"
           class="h-12 min-w-0 flex-1 rounded bg-[#3B3D3F] py-3 pl-4 pr-2 text-sm text-white placeholder:text-white/45 focus:outline-none"
         />
-        <button
-          type="submit"
-          class="flex h-12 w-[97px] shrink-0 items-center justify-center rounded bg-[#F0B90B] px-4 py-3 text-sm font-bold text-ink focus:outline-none focus:ring-2 focus:ring-white"
-        >
+        <BaseButton type="submit" class="h-12 w-[97px]">
           جستجو
-        </button>
+        </BaseButton>
       </form>
     </div>
   </header>
