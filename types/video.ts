@@ -11,6 +11,9 @@ export interface VideoSummary {
 
 export interface VideoDetail extends VideoSummary {
   description: string
+  likeCount: number
+  followerCount: number
+  tags: string[]
 }
 
 export interface VideoPage {
