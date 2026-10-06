@@ -1,6 +1,10 @@
-# Nuxt Minimal Starter
+# ویدیوهای صرافی تبدیل
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+A Nuxt app for the Tabdeal channel on Aparat (`tabdealplatform`).
+
+The home page lists the channel videos. Search filters by title, and the list is paginated. Opening a video shows the player, title, channel, views, date, and description. An unknown video returns a 404.
+
+Pages are server-rendered. The browser talks to this app, and a Nitro route fetches Aparat.
 
 ## Setup
 
@@ -8,26 +12,17 @@ Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduct
 pnpm install
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+## Development
 
 ```bash
 pnpm dev
 ```
 
-## Production
+Open http://localhost:3000.
 
-Build the application for production:
+## Production
 
 ```bash
 pnpm build
-```
-
-Locally preview the production build:
-
-```bash
 pnpm preview
 ```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
