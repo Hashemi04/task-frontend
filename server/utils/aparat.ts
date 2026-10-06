@@ -105,7 +105,40 @@ function mapDetail(video: Record<string, unknown>, channel: Record<string, unkno
     likeCount: numberCount(video.like_cnt_non_formatted ?? video.like_cnt),
     followerCount: numberCount(channel.follower_cnt),
     tags: stringList(video.tags),
+    playbackUrl: mp4Url(video.file_link_all),
   }
+}
+
+function mp4Url(value: unknown) {
+  if (!Array.isArray(value)) return ''
+
+  const items = value.filter(isRecord)
+  const preferred = ['720p', '480p', '360p', '1080p', '240p', '144p']
+
+  for (const profile of preferred) {
+    const match = items.find((item) => text(item.profile) === profile)
+    const url = firstMp4(match)
+    if (url) return url
+  }
+
+  return firstMp4(items[0])
+}
+
+function firstMp4(item: Record<string, unknown> | undefined) {
+  if (!item || !Array.isArray(item.urls)) return ''
+
+  const url = text(item.urls[0])
+  try {
+    const parsed = new URL(url)
+    const hostOk = parsed.hostname === 'asset.aparat.com' || parsed.hostname.endsWith('.asset.aparat.com')
+    if (parsed.protocol === 'https:' && hostOk && parsed.pathname.endsWith('.mp4')) {
+      return parsed.toString()
+    }
+  } catch {
+    return ''
+  }
+
+  return ''
 }
 
 function resourceAttributes(document: AparatDocument, type: string) {
