@@ -1,20 +1,11 @@
 <script setup lang="ts">
-import { findVideoDetail } from "../../data/videos";
+import type { VideoDetail } from "../../types/video";
 
 const route = useRoute();
 
 const { data: video, error } = await useAsyncData(
   () => `video-${route.params.uid}`,
-  async () => {
-    const detail = findVideoDetail(String(route.params.uid));
-    if (!detail) {
-      throw createError({
-        statusCode: 404,
-        message: "ویدیو پیدا نشد",
-      });
-    }
-    return detail;
-  },
+  () => $fetch<VideoDetail>(`/api/videos/${route.params.uid}`),
 );
 
 if (error.value) {
@@ -28,6 +19,26 @@ if (error.value) {
 const followerLabel = computed(() => {
   return new Intl.NumberFormat("en-US").format(video.value?.followerCount ?? 0);
 });
+
+const descriptionExpanded = ref(false);
+const descriptionOverflows = ref(false);
+const descriptionRef = ref<HTMLParagraphElement | null>(null);
+
+async function measureDescription() {
+  descriptionExpanded.value = false;
+  descriptionOverflows.value = false;
+  await nextTick();
+  const element = descriptionRef.value;
+  if (!element) return;
+  descriptionOverflows.value = element.scrollHeight > element.clientHeight + 1;
+}
+
+onMounted(measureDescription);
+watch(() => video.value?.uid, measureDescription);
+
+function showFullDescription() {
+  descriptionExpanded.value = true;
+}
 
 useHead({
   title: computed(() => video.value?.title ?? "ویدیو پیدا نشد"),
@@ -93,9 +104,21 @@ useHead({
         </span>
       </p>
 
-      <p class="mt-2 text-sm leading-6 text-white/55">
+      <p
+        ref="descriptionRef"
+        class="mt-2 text-sm leading-6 text-white/55"
+        :class="{ 'line-clamp-2': !descriptionExpanded }"
+      >
         {{ video.description }}
       </p>
+      <button
+        v-if="descriptionOverflows && !descriptionExpanded"
+        type="button"
+        class="mt-1 text-sm text-[#2d89b1]"
+        @click="showFullDescription"
+      >
+        بیشتر
+      </button>
     </div>
   </section>
 </template>
