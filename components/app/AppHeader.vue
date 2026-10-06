@@ -34,9 +34,9 @@ function onSubmit() {
     </div>
   </header>
 
-  <div v-if="showSearch" class="mx-auto max-w-6xl px-4 pb-8 md:px-6 md:pb-6">
+  <div v-if="showSearch" class="mx-auto w-full max-w-6xl px-4 py-7 md:px-6">
     <form
-      class="flex h-20 w-full max-w-80 items-center justify-center gap-4 rounded-lg bg-[#2C2E30] p-3 md:max-w-none"
+      class="flex h-20 w-full items-center justify-center gap-4 rounded-lg bg-[#2C2E30] p-3"
       @submit.prevent="onSubmit"
     >
       <label class="sr-only" for="video-search">جستجوی عنوان ویدیو</label>
