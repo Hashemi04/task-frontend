@@ -47,7 +47,7 @@ useHead({
 
 <template>
   <section v-if="video" class="min-h-[calc(100dvh-4.5rem)] bg-[#2C2E30]">
-    <div class="mx-auto max-w-6xl px-4 pb-10 pt-2 md:px-6">
+    <div class="mx-auto max-w-6xl px-4 p-10 md:px-6">
       <VideoPlayer :video="video" />
 
       <h1 class="mt-4 text-lg font-bold leading-7">
