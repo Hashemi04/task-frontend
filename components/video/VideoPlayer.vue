@@ -11,16 +11,21 @@ const playing = ref(false)
 const muted = ref(false)
 const progress = ref(0)
 const started = ref(false)
+const buffering = ref(false)
+const failed = ref(false)
 
-watch(
-  () => props.video.uid,
-  () => {
-    playing.value = false
-    muted.value = false
-    progress.value = 0
-    started.value = false
-  }
-)
+const unavailable = computed(() => !props.video.playbackUrl)
+const notice = computed(() => {
+  if (unavailable.value) return 'پخش این ویدیو در دسترس نیست'
+  if (failed.value) return 'پخش ویدیو انجام نشد'
+  return ''
+})
+
+function onError() {
+  failed.value = true
+  buffering.value = false
+  playing.value = false
+}
 
 function sync() {
   const element = media.value
@@ -33,11 +38,15 @@ function sync() {
 
 async function togglePlay() {
   const element = media.value
-  if (!element || !props.video.playbackUrl) return
+  if (!element || notice.value) return
 
   if (element.paused) {
     started.value = true
-    await element.play()
+    try {
+      await element.play()
+    } catch (error) {
+      if (!(error instanceof DOMException)) throw error
+    }
     return
   }
 
@@ -154,11 +163,10 @@ function toggleFullscreen() {
 <template>
   <div
     ref="root"
-    class="relative aspect-video overflow-hidden rounded-lg border border-[#343638] bg-[#4f5154]"
+    class="relative aspect-video overflow-hidden rounded-lg border border-edge bg-placeholder"
   >
     <video
       ref="media"
-      :key="video.uid"
       :src="video.playbackUrl || undefined"
       :poster="video.posterUrl || undefined"
       class="h-full w-full object-contain"
@@ -170,6 +178,10 @@ function toggleFullscreen() {
       @play="playing = true"
       @pause="playing = false"
       @ended="playing = false"
+      @waiting="buffering = true"
+      @playing="buffering = false"
+      @canplay="buffering = false"
+      @error="onError"
     />
 
     <IconEmptyPoster
@@ -178,17 +190,40 @@ function toggleFullscreen() {
       preserveAspectRatio="none"
     />
 
-    <div class="absolute inset-x-0 bottom-0 z-10 px-4 pb-3" dir="ltr">
+    <p
+      v-if="notice"
+      class="absolute inset-0 flex items-center justify-center bg-black/60 px-4 text-center text-sm"
+      role="status"
+    >
+      {{ notice }}
+    </p>
+
+    <div
+      v-else-if="buffering"
+      class="pointer-events-none absolute inset-0 flex items-center justify-center"
+      role="status"
+      aria-label="در حال بارگذاری"
+    >
+      <span
+        class="size-10 animate-spin rounded-full border-4 border-white/30 border-t-white"
+      />
+    </div>
+
+    <div
+      v-if="!notice"
+      class="absolute inset-x-0 bottom-0 z-10 px-4 pb-3"
+      dir="ltr"
+    >
       <button
         type="button"
-        class="relative block h-1.5 w-full cursor-pointer bg-[#d9d9d9]"
+        class="relative block h-1.5 w-full cursor-pointer bg-track"
         aria-label="موقعیت پخش"
         aria-keyshortcuts="ArrowLeft ArrowRight"
         @pointerdown="scrub"
         @pointermove="scrub"
       >
         <span
-          class="absolute inset-y-0 left-0 bg-[#F0B90B]"
+          class="absolute inset-y-0 left-0 bg-accent"
           :style="{ width: `${progress}%` }"
         />
       </button>
