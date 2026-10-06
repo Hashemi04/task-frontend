@@ -27,7 +27,7 @@ function onSubmit() {
       :class="showSearch ? 'pb-3 md:pt-6 md:pb-5' : 'pb-4 md:py-4'"
     >
       <NuxtLink to="/" class="relative z-10" aria-label="تبدیل">
-        <img src="/tabdeal.svg" alt="" class="h-8 w-auto md:h-10" />
+        <img src="/tabdeal.svg" alt="" width="165" height="48" class="h-8 w-auto md:h-10" />
       </NuxtLink>
     </div>
   </header>

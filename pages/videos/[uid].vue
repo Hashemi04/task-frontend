@@ -40,8 +40,16 @@ function showFullDescription() {
   descriptionExpanded.value = true;
 }
 
-useHead({
-  title: computed(() => video.value?.title ?? "ویدیو پیدا نشد"),
+useHead(() => {
+  const raw = video.value?.description.replace(/\s+/g, " ").trim() ?? "";
+  const description = raw.length > 160 ? `${raw.slice(0, 157)}...` : raw;
+
+  return {
+    title: video.value?.title ?? "ویدیو پیدا نشد",
+    meta: description
+      ? [{ key: "description", name: "description", content: description }]
+      : [],
+  };
 });
 </script>
 
@@ -67,7 +75,7 @@ useHead({
           </span>
           <div class="flex flex-col gap-0.5">
             <p class="text-sm leading-5">{{ video.senderName }}</p>
-            <p class="text-xs leading-4 text-white/50">
+            <p class="text-xs leading-4 text-white/70">
               {{ followerLabel }} دنبال کننده
             </p>
           </div>
@@ -94,19 +102,19 @@ useHead({
         </button>
       </div>
 
-      <p class="mt-3 flex flex-wrap items-center gap-x-2 text-xs text-white/50">
+      <p class="mt-3 flex flex-wrap items-center gap-x-2 text-xs text-white/70">
         <span>{{ video.visitCount }} بازدید</span>
         <span aria-hidden="true">•</span>
         <span>{{ video.publishedAtLabel }}</span>
         <span aria-hidden="true">•</span>
-        <span v-for="tag in video.tags" :key="tag" class="text-[#2d89b1]">
+        <span v-for="tag in video.tags" :key="tag" class="text-[#6EC0E0]">
           #{{ tag }}
         </span>
       </p>
 
       <p
         ref="descriptionRef"
-        class="mt-2 text-sm leading-6 text-white/55"
+        class="mt-2 text-sm leading-6 text-white/70"
         :class="{ 'line-clamp-2': !descriptionExpanded }"
       >
         {{ video.description }}
@@ -114,7 +122,7 @@ useHead({
       <button
         v-if="descriptionOverflows && !descriptionExpanded"
         type="button"
-        class="mt-1 text-sm text-[#2d89b1]"
+        class="mt-1 text-sm text-[#6EC0E0]"
         @click="showFullDescription"
       >
         بیشتر
