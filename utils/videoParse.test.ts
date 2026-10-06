@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clampPage, mp4Url, numberCount } from './videoParse'
+import { asText, isRecord, mp4Url, numberCount } from './videoParse'
 
 const mp4 = (profile: string, url: string) => ({ profile, urls: [url] })
 
@@ -45,15 +45,19 @@ describe('mp4Url', () => {
   })
 })
 
-describe('clampPage', () => {
-  it('keeps an in-range page', () => {
-    expect(clampPage(2, 10)).toBe(2)
+describe('asText', () => {
+  it('trims strings and drops everything else', () => {
+    expect(asText('  عنوان ')).toBe('عنوان')
+    expect(asText(12)).toBe('')
+    expect(asText(null)).toBe('')
   })
+})
 
-  it('pulls a page back inside the catalog', () => {
-    expect(clampPage(0, 5)).toBe(1)
-    expect(clampPage(9, 3)).toBe(3)
-    expect(clampPage(Number.NaN, 4)).toBe(1)
-    expect(clampPage(2, 0)).toBe(1)
+describe('isRecord', () => {
+  it('accepts objects only', () => {
+    expect(isRecord({})).toBe(true)
+    expect(isRecord([])).toBe(true)
+    expect(isRecord(null)).toBe(false)
+    expect(isRecord('x')).toBe(false)
   })
 })
