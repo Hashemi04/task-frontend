@@ -14,6 +14,7 @@ export interface VideoDetail extends VideoSummary {
   likeCount: number
   followerCount: number
   tags: string[]
+  playbackUrl: string
 }
 
 export interface VideoPage {

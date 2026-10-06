@@ -15,6 +15,7 @@ export default defineNuxtConfig({
         lang: 'fa',
         dir: 'rtl',
       },
+      link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     },
   },
 })

@@ -7,9 +7,9 @@ useHead({
 </script>
 
 <template>
-  <div class="min-h-screen bg-ink">
+  <div class="flex min-h-screen flex-col bg-ink">
     <AppHeader />
-    <main>
+    <main class="flex-1 bg-[#404244]">
       <slot />
     </main>
   </div>
