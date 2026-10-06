@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const route = useRoute();
+const showSearch = computed(() => !route.path.startsWith("/videos/"));
 const { query, submitSearch } = useSearchQuery();
 const draft = ref(query.value);
 
@@ -14,7 +16,8 @@ function onSubmit() {
 <template>
   <header class="bg-ink">
     <div
-      class="relative mx-auto flex max-w-6xl flex-col items-start gap-3 px-4 pb-8 pt-3 md:gap-5 md:px-6 md:py-6"
+      class="relative mx-auto flex max-w-6xl flex-col items-start px-4 pt-3 md:px-6"
+      :class="showSearch ? 'gap-3 pb-8 md:gap-5 md:py-6' : 'pb-4 md:py-4'"
     >
       <div
         class="pointer-events-none absolute inset-x-0 -top-2 bottom-[-3.5rem] bg-[radial-gradient(120%_100%_at_84%_0%,rgba(240,186,11,0.98)_0%,rgba(240,186,11,0.62)_40%,transparent_72%)] md:hidden"
@@ -30,6 +33,7 @@ function onSubmit() {
       </NuxtLink>
 
       <form
+        v-if="showSearch"
         class="relative flex h-20 w-full max-w-80 items-center justify-center gap-4 rounded-lg bg-[#2C2E30] p-3 md:max-w-none"
         @submit.prevent="onSubmit"
       >

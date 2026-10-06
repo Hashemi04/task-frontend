@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppHeader from '~/components/app/AppHeader.vue'
+
 useHead({
   title: 'ویدیوهای صرافی تبدیل',
 })
