@@ -5,7 +5,15 @@ defineProps<{
 </script>
 
 <template>
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+    aria-hidden="true"
+  >
     <path d="M1.4 10.2 H4 L10.2 5.4 V18.6 L4 13.8 H1.4 Z" />
     <path v-if="muted" d="M16 8 L22 16 M22 8 L16 16" />
     <template v-else>

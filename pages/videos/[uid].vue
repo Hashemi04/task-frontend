@@ -1,56 +1,56 @@
 <script setup lang="ts">
-import type { VideoDetail } from "../../types/video";
+import type { VideoDetail } from '~/types/video'
 
-const route = useRoute();
+const route = useRoute()
 
 const { data: video, error } = await useAsyncData(
   () => `video-${route.params.uid}`,
-  () => $fetch<VideoDetail>(`/api/videos/${route.params.uid}`),
-);
+  () => $fetch<VideoDetail>(`/api/videos/${route.params.uid}`)
+)
 
 if (error.value) {
   throw createError({
     statusCode: error.value.statusCode ?? 404,
-    message: "ویدیو پیدا نشد",
+    message: 'ویدیو پیدا نشد',
     fatal: true,
-  });
+  })
 }
 
 const followerLabel = computed(() => {
-  return new Intl.NumberFormat("en-US").format(video.value?.followerCount ?? 0);
-});
+  return new Intl.NumberFormat('en-US').format(video.value?.followerCount ?? 0)
+})
 
-const descriptionExpanded = ref(false);
-const descriptionOverflows = ref(false);
-const descriptionRef = ref<HTMLParagraphElement | null>(null);
+const descriptionExpanded = ref(false)
+const descriptionOverflows = ref(false)
+const descriptionRef = ref<HTMLParagraphElement | null>(null)
 
 async function measureDescription() {
-  descriptionExpanded.value = false;
-  descriptionOverflows.value = false;
-  await nextTick();
-  const element = descriptionRef.value;
-  if (!element) return;
-  descriptionOverflows.value = element.scrollHeight > element.clientHeight + 1;
+  descriptionExpanded.value = false
+  descriptionOverflows.value = false
+  await nextTick()
+  const element = descriptionRef.value
+  if (!element) return
+  descriptionOverflows.value = element.scrollHeight > element.clientHeight + 1
 }
 
-onMounted(measureDescription);
-watch(() => video.value?.uid, measureDescription);
+onMounted(measureDescription)
+watch(() => video.value?.uid, measureDescription)
 
 function showFullDescription() {
-  descriptionExpanded.value = true;
+  descriptionExpanded.value = true
 }
 
 useHead(() => {
-  const raw = video.value?.description.replace(/\s+/g, " ").trim() ?? "";
-  const description = raw.length > 160 ? `${raw.slice(0, 157)}...` : raw;
+  const raw = video.value?.description.replace(/\s+/g, ' ').trim() ?? ''
+  const description = raw.length > 160 ? `${raw.slice(0, 157)}...` : raw
 
   return {
-    title: video.value?.title ?? "ویدیو پیدا نشد",
+    title: video.value?.title ?? 'ویدیو پیدا نشد',
     meta: description
-      ? [{ key: "description", name: "description", content: description }]
+      ? [{ key: 'description', name: 'description', content: description }]
       : [],
-  };
-});
+  }
+})
 </script>
 
 <template>

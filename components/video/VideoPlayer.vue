@@ -1,153 +1,153 @@
 <script setup lang="ts">
-import type { VideoDetail } from "../../types/video";
+import type { VideoDetail } from '~/types/video'
 
 const props = defineProps<{
-  video: VideoDetail;
-}>();
+  video: VideoDetail
+}>()
 
-const root = ref<HTMLElement | null>(null);
-const media = ref<HTMLVideoElement | null>(null);
-const playing = ref(false);
-const muted = ref(false);
-const progress = ref(0);
-const started = ref(false);
+const root = ref<HTMLElement | null>(null)
+const media = ref<HTMLVideoElement | null>(null)
+const playing = ref(false)
+const muted = ref(false)
+const progress = ref(0)
+const started = ref(false)
 
 watch(
   () => props.video.uid,
   () => {
-    playing.value = false;
-    muted.value = false;
-    progress.value = 0;
-    started.value = false;
-  },
-);
+    playing.value = false
+    muted.value = false
+    progress.value = 0
+    started.value = false
+  }
+)
 
 function sync() {
-  const element = media.value;
+  const element = media.value
   if (!element || !element.duration) {
-    progress.value = 0;
-    return;
+    progress.value = 0
+    return
   }
-  progress.value = (element.currentTime / element.duration) * 100;
+  progress.value = (element.currentTime / element.duration) * 100
 }
 
 async function togglePlay() {
-  const element = media.value;
-  if (!element || !props.video.playbackUrl) return;
+  const element = media.value
+  if (!element || !props.video.playbackUrl) return
 
   if (element.paused) {
-    started.value = true;
-    await element.play();
-    return;
+    started.value = true
+    await element.play()
+    return
   }
 
-  element.pause();
+  element.pause()
 }
 
 function toggleMute() {
-  const element = media.value;
-  if (!element) return;
-  element.muted = !element.muted;
-  muted.value = element.muted;
+  const element = media.value
+  if (!element) return
+  element.muted = !element.muted
+  muted.value = element.muted
 }
 
 function seekTo(clientX: number, bar: HTMLElement) {
-  const element = media.value;
-  if (!element || !element.duration) return;
+  const element = media.value
+  if (!element || !element.duration) return
 
-  const rect = bar.getBoundingClientRect();
-  const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-  element.currentTime = ratio * element.duration;
-  started.value = true;
-  sync();
+  const rect = bar.getBoundingClientRect()
+  const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
+  element.currentTime = ratio * element.duration
+  started.value = true
+  sync()
 }
 
 function scrub(event: PointerEvent) {
-  const bar = event.currentTarget;
-  if (!(bar instanceof HTMLElement)) return;
-  if (event.type === "pointermove" && event.buttons !== 1) return;
+  const bar = event.currentTarget
+  if (!(bar instanceof HTMLElement)) return
+  if (event.type === 'pointermove' && event.buttons !== 1) return
 
-  if (event.type === "pointerdown") bar.setPointerCapture(event.pointerId);
-  seekTo(event.clientX, bar);
+  if (event.type === 'pointerdown') bar.setPointerCapture(event.pointerId)
+  seekTo(event.clientX, bar)
 }
 
 function seekBy(seconds: number) {
-  const element = media.value;
-  if (!element || !element.duration) return;
+  const element = media.value
+  if (!element || !element.duration) return
 
   element.currentTime = Math.min(
     element.duration,
-    Math.max(0, element.currentTime + seconds),
-  );
-  started.value = true;
-  sync();
+    Math.max(0, element.currentTime + seconds)
+  )
+  started.value = true
+  sync()
 }
 
 function isTyping(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false;
-  const tag = target.tagName;
+  if (!(target instanceof HTMLElement)) return false
+  const tag = target.tagName
   return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "SELECT" ||
+    tag === 'INPUT' ||
+    tag === 'TEXTAREA' ||
+    tag === 'SELECT' ||
     target.isContentEditable
-  );
+  )
 }
 
 function onKeydown(event: KeyboardEvent) {
   if (event.metaKey || event.ctrlKey || event.altKey || isTyping(event.target))
-    return;
+    return
   if (
     event.target instanceof HTMLButtonElement &&
-    (event.key === " " || event.key === "Enter")
+    (event.key === ' ' || event.key === 'Enter')
   )
-    return;
+    return
 
-  if (event.key === " " || event.key === "k" || event.key === "K") {
-    event.preventDefault();
-    togglePlay();
-    return;
+  if (event.key === ' ' || event.key === 'k' || event.key === 'K') {
+    event.preventDefault()
+    togglePlay()
+    return
   }
 
-  if (event.key === "ArrowLeft") {
-    event.preventDefault();
-    seekBy(-5);
-    return;
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    seekBy(-5)
+    return
   }
 
-  if (event.key === "ArrowRight") {
-    event.preventDefault();
-    seekBy(5);
-    return;
+  if (event.key === 'ArrowRight') {
+    event.preventDefault()
+    seekBy(5)
+    return
   }
 
-  if (event.key === "m" || event.key === "M") {
-    event.preventDefault();
-    toggleMute();
-    return;
+  if (event.key === 'm' || event.key === 'M') {
+    event.preventDefault()
+    toggleMute()
+    return
   }
 
-  if (event.key === "f" || event.key === "F") {
-    event.preventDefault();
-    toggleFullscreen();
+  if (event.key === 'f' || event.key === 'F') {
+    event.preventDefault()
+    toggleFullscreen()
   }
 }
 
 onMounted(() => {
-  window.addEventListener("keydown", onKeydown);
-  onScopeDispose(() => window.removeEventListener("keydown", onKeydown));
-});
+  window.addEventListener('keydown', onKeydown)
+  onScopeDispose(() => window.removeEventListener('keydown', onKeydown))
+})
 
 function toggleFullscreen() {
-  const element = root.value;
-  if (!element) return;
+  const element = root.value
+  if (!element) return
 
   if (document.fullscreenElement) {
-    document.exitFullscreen();
-    return;
+    document.exitFullscreen()
+    return
   }
 
-  element.requestFullscreen();
+  element.requestFullscreen()
 }
 </script>
 

@@ -32,7 +32,8 @@ const items = computed(() => {
     start = count - windowSize + 1
   }
 
-  const result: Array<{ type: 'page' | 'ellipsis', value: number | string }> = []
+  const result: Array<{ type: 'page' | 'ellipsis'; value: number | string }> =
+    []
 
   if (start > 1) result.push({ type: 'ellipsis', value: 'start' })
 
@@ -47,7 +48,11 @@ const items = computed(() => {
 </script>
 
 <template>
-  <nav dir="ltr" class="flex flex-nowrap items-center justify-center gap-1 sm:gap-3" aria-label="صفحه‌بندی">
+  <nav
+    dir="ltr"
+    class="flex flex-nowrap items-center justify-center gap-1 sm:gap-3"
+    aria-label="صفحه‌بندی"
+  >
     <BaseButton
       variant="ghost"
       :disabled="page === 1"

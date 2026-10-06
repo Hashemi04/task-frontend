@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import type { VideoSummary } from "../../types/video";
-import { formatDuration } from "../../utils/formatDuration";
+import type { VideoSummary } from '~/types/video'
+import { formatDuration } from '~/utils/formatDuration'
 
 const props = defineProps<{
-  video: VideoSummary;
-}>();
+  video: VideoSummary
+}>()
 
 const durationLabel = computed(() =>
-  formatDuration(props.video.durationSeconds),
-);
+  formatDuration(props.video.durationSeconds)
+)
 </script>
 
 <template>
