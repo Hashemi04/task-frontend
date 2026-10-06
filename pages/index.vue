@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { videoPageFixture } from '../data/videos'
+import type { VideoPage } from '../types/video'
 
-const { data: videoPage, status, refresh } = await useAsyncData('channel-videos', async () => videoPageFixture)
+const { data: videoPage, status, refresh } = await useAsyncData('channel-videos', () => {
+  return $fetch<VideoPage>('/api/videos')
+})
 
 const totalCount = computed(() => videoPage.value?.totalCount ?? 0)
 const { pageSize, currentPage, pageCount, setPage } = useVideoPagination(totalCount)
