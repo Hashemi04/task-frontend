@@ -12,17 +12,20 @@ const visibleVideos = computed(() => {
   return items.slice(start, start + pageSize.value)
 })
 
+// loading: the request is still pending and nothing has arrived yet
 const isLoading = computed(() => status.value === 'pending' && !videoPage.value)
 </script>
 
 <template>
   <section class="mx-auto max-w-6xl px-4 py-6 md:px-6" :aria-busy="isLoading">
+    <!-- loading -->
     <ul v-if="isLoading" class="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <li v-for="index in pageSize" :key="index">
         <VideoCardSkeleton />
       </li>
     </ul>
 
+    <!-- error -->
     <div v-else-if="status === 'error'" class="flex flex-col items-center gap-4 py-16 text-center" role="alert">
       <p>بارگذاری ویدیوها انجام نشد</p>
       <BaseButton @click="refresh()">
@@ -30,10 +33,12 @@ const isLoading = computed(() => status.value === 'pending' && !videoPage.value)
       </BaseButton>
     </div>
 
+    <!-- empty -->
     <p v-else-if="!videoPage?.items.length" class="py-16 text-center text-white/70">
       ویدیویی برای نمایش وجود ندارد
     </p>
 
+    <!-- ready -->
     <template v-else>
       <ul class="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <li v-for="video in visibleVideos" :key="video.uid">
