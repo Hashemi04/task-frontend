@@ -14,6 +14,7 @@ export function useSearchQuery() {
       query: {
         ...route.query,
         q: q || undefined,
+        page: undefined,
       },
     })
   }

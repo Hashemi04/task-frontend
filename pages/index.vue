@@ -5,13 +5,21 @@ const { data: videoPage, status, refresh } = await useAsyncData('channel-videos'
   return $fetch<VideoPage>('/api/videos')
 })
 
-const totalCount = computed(() => videoPage.value?.totalCount ?? 0)
+const { query } = useSearchQuery()
+
+const filteredVideos = computed(() => {
+  const items = videoPage.value?.items ?? []
+  const q = query.value.trim().toLowerCase()
+  if (!q) return items
+  return items.filter((video) => video.title.toLowerCase().includes(q))
+})
+
+const totalCount = computed(() => filteredVideos.value.length)
 const { pageSize, currentPage, pageCount, setPage } = useVideoPagination(totalCount)
 
 const visibleVideos = computed(() => {
-  const items = videoPage.value?.items ?? []
   const start = (currentPage.value - 1) * pageSize.value
-  return items.slice(start, start + pageSize.value)
+  return filteredVideos.value.slice(start, start + pageSize.value)
 })
 
 // loading: the request is still pending and nothing has arrived yet
@@ -36,7 +44,7 @@ const isLoading = computed(() => status.value === 'pending' && !videoPage.value)
     </div>
 
     <!-- empty -->
-    <p v-else-if="!videoPage?.items.length" class="py-16 text-center text-white/70">
+    <p v-else-if="!filteredVideos.length" class="py-16 text-center text-white/70">
       ویدیویی برای نمایش وجود ندارد
     </p>
 
