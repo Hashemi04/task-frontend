@@ -51,25 +51,24 @@ function toggleMute() {
   muted.value = element.muted;
 }
 
-function seek(event: MouseEvent) {
+function seekTo(clientX: number, bar: HTMLElement) {
   const element = media.value;
-  const bar = event.currentTarget;
-  if (
-    event.detail === 0 ||
-    !element ||
-    !element.duration ||
-    !(bar instanceof HTMLElement)
-  )
-    return;
+  if (!element || !element.duration) return;
 
   const rect = bar.getBoundingClientRect();
-  const ratio = Math.min(
-    1,
-    Math.max(0, (event.clientX - rect.left) / rect.width),
-  );
+  const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
   element.currentTime = ratio * element.duration;
   started.value = true;
   sync();
+}
+
+function scrub(event: PointerEvent) {
+  const bar = event.currentTarget;
+  if (!(bar instanceof HTMLElement)) return;
+  if (event.type === "pointermove" && event.buttons !== 1) return;
+
+  if (event.type === "pointerdown") bar.setPointerCapture(event.pointerId);
+  seekTo(event.clientX, bar);
 }
 
 function seekBy(seconds: number) {
@@ -182,10 +181,11 @@ function toggleFullscreen() {
     <div class="absolute inset-x-0 bottom-0 z-10 px-4 pb-3" dir="ltr">
       <button
         type="button"
-        class="relative block h-0.5 w-full bg-[#d9d9d9]"
+        class="relative block h-1.5 w-full cursor-pointer bg-[#d9d9d9]"
         aria-label="موقعیت پخش"
         aria-keyshortcuts="ArrowLeft ArrowRight"
-        @click="seek"
+        @pointerdown="scrub"
+        @pointermove="scrub"
       >
         <span
           class="absolute inset-y-0 left-0 bg-[#F0B90B]"
