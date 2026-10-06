@@ -1,11 +1,15 @@
+import { clampPage } from '~/utils/videoParse'
+
 const desktopMinWidth = 1024
 const desktopPageSize = 9
 const mobilePageSize = 6
 
-export function useVideoPagination(totalCount: MaybeRef<number>) {
+export function useVideoPagination(
+  totalCount: MaybeRef<number>,
+  pageSize = useVideoPageSize()
+) {
   const route = useRoute()
   const router = useRouter()
-  const pageSize = useVideoPageSize()
 
   const requestedPage = computed(() => {
     const value = Number(route.query.page)
@@ -16,10 +20,12 @@ export function useVideoPagination(totalCount: MaybeRef<number>) {
     return Math.max(1, Math.ceil(toValue(totalCount) / pageSize.value))
   })
 
-  const currentPage = computed(() => Math.min(requestedPage.value, pageCount.value))
+  const currentPage = computed(() =>
+    clampPage(requestedPage.value, pageCount.value)
+  )
 
   async function setPage(nextPage: number) {
-    const page = Math.min(Math.max(1, nextPage), pageCount.value)
+    const page = clampPage(nextPage, pageCount.value)
 
     await router.replace({
       query: {
@@ -44,7 +50,7 @@ export function useVideoPagination(totalCount: MaybeRef<number>) {
   return { pageSize, currentPage, pageCount, setPage }
 }
 
-function useVideoPageSize() {
+export function useVideoPageSize() {
   const pageSize = useState('video-page-size', () => {
     if (import.meta.server) {
       const userAgent = useRequestHeaders(['user-agent'])['user-agent'] ?? ''
