@@ -1,13 +1,28 @@
 import type { VideoDetail, VideoPage, VideoSummary } from '~/types/video'
 import { clampPage } from '~/utils/pagination'
-import { asText, isRecord, mp4Url, numberCount } from '~/utils/videoParse'
+import { searchKey } from '~/server/lib/searchText'
+import {
+  aparatUrl,
+  asText,
+  isoDate,
+  isRecord,
+  mp4Url,
+  numberCount,
+  plainText,
+  posterSrcset,
+} from '~/server/lib/videoParse'
 
 const catalogTtlMs = 60_000
 const requestTimeoutMs = 8_000
 const maxCatalogPages = 20
 
-let catalogCache: { at: number; items: VideoSummary[] } | null = null
-let catalogRequest: Promise<VideoSummary[]> | null = null
+export interface CatalogVideo extends VideoSummary {
+  description: string
+  embedUrl: string
+}
+
+let catalogCache: { at: number; items: CatalogVideo[] } | null = null
+let catalogRequest: Promise<CatalogVideo[]> | null = null
 
 interface AparatResource {
   type?: string
@@ -27,9 +42,9 @@ export async function fetchChannelPage(
   } = {}
 ): Promise<VideoPage> {
   const catalog = await loadCatalog()
-  const q = (input.q ?? '').trim().toLowerCase()
+  const q = searchKey(input.q ?? '')
   const matched = q
-    ? catalog.filter((video) => video.title.toLowerCase().includes(q))
+    ? catalog.filter((video) => searchKey(video.title).includes(q))
     : catalog
   const perPage = clampPerPage(input.perPage)
   const pageCount = Math.max(1, Math.ceil(matched.length / perPage))
@@ -37,11 +52,23 @@ export async function fetchChannelPage(
   const start = (page - 1) * perPage
 
   return {
-    items: matched.slice(start, start + perPage),
+    items: matched.slice(start, start + perPage).map(toSummary),
     page,
     perPage,
     totalCount: matched.length,
   }
+}
+
+export function fetchChannelVideos() {
+  return loadCatalog()
+}
+
+function toSummary({
+  description: _description,
+  embedUrl: _embedUrl,
+  ...summary
+}: CatalogVideo) {
+  return summary
 }
 
 async function loadCatalog() {
@@ -50,22 +77,29 @@ async function loadCatalog() {
   }
 
   if (!catalogRequest) {
-    catalogRequest = fetchCatalog().finally(() => {
-      catalogRequest = null
-    })
+    const stale = catalogCache?.items
+    catalogRequest = fetchCatalog()
+      .catch((error) => {
+        if (!stale) throw error
+        catalogCache = { at: Date.now(), items: stale }
+        return stale
+      })
+      .finally(() => {
+        catalogRequest = null
+      })
   }
 
   return catalogRequest
 }
 
 async function fetchCatalog() {
-  const items: VideoSummary[] = []
+  const items: CatalogVideo[] = []
   const seen = new Set<string>()
   const { aparatChannel } = useRuntimeConfig()
   let next: string | null =
     `https://www.aparat.com/api/fa/v1/user/video/list/username/${encodeURIComponent(aparatChannel)}`
 
-  for (let attempt = 0; attempt < maxCatalogPages && next; attempt += 1) {
+  for (let pageIndex = 0; pageIndex < maxCatalogPages && next; pageIndex += 1) {
     const document = await aparat(next)
     if (!document) {
       throw createError({
@@ -80,10 +114,15 @@ async function fetchCatalog() {
     )
 
     for (const video of videos) {
-      const summary = mapSummary(video.attributes ?? {}, channel)
+      const attributes = video.attributes ?? {}
+      const summary = mapSummary(attributes, channel)
       if (!summary.uid || seen.has(summary.uid)) continue
       seen.add(summary.uid)
-      items.push(summary)
+      items.push({
+        ...summary,
+        description: plainText(attributes.description),
+        embedUrl: aparatUrl(attributes.frame),
+      })
     }
 
     const list = firstData(document)
@@ -117,6 +156,10 @@ export async function fetchVideoDetail(
   if (asText(video.uid) !== uid || asText(video.deleted) === 'yes') return null
 
   const channel = resourceAttributes(document, 'channel')
+  const owner = asText(video.owner_username) || asText(channel.username)
+  const { aparatChannel } = useRuntimeConfig()
+  if (owner.toLowerCase() !== aparatChannel.toLowerCase()) return null
+
   return mapDetail(video, channel)
 }
 
@@ -139,17 +182,22 @@ function mapSummary(
 ): VideoSummary {
   return {
     uid: asText(video.uid),
-    title: asText(video.title),
+    title: plainText(video.title),
     posterUrl: asText(video.big_poster),
+    posterSrcset: posterSrcset(video),
     durationSeconds: numberCount(video.duration),
     visitCount: numberCount(
       video.visit_cnt_int ?? video.visit_cnt_non_formatted ?? video.visit_cnt
     ),
+    publishedAt:
+      isoDate(video.sdate_real) ||
+      isoDate(video.sdate_rss) ||
+      isoDate(video.mdate),
     publishedAtLabel: asText(video.sdate),
     senderName:
-      asText(video.sender_name) ||
-      asText(channel.displayName) ||
-      asText(channel.name),
+      plainText(video.sender_name) ||
+      plainText(channel.displayName) ||
+      plainText(channel.name),
     profilePhotoUrl: asText(video.profilePhoto) || asText(channel.avatar),
   }
 }
@@ -167,11 +215,12 @@ function mapDetail(
       },
       channel
     ),
-    description: asText(video.description),
+    description: plainText(video.description),
     likeCount: numberCount(video.like_cnt_non_formatted ?? video.like_cnt),
     followerCount: numberCount(channel.follower_cnt),
     tags: stringList(video.tags),
     playbackUrl: mp4Url(video.file_link_all),
+    embedUrl: aparatUrl(video.frame_src) || aparatUrl(video.frame),
   }
 }
 
@@ -187,9 +236,7 @@ function firstData(document: AparatDocument) {
 
 function stringList(value: unknown) {
   if (!Array.isArray(value)) return []
-  return value.filter(
-    (item): item is string => typeof item === 'string' && item.trim() !== ''
-  )
+  return value.map(plainText).filter((item) => item !== '')
 }
 
 function errorStatus(error: unknown) {
