@@ -27,14 +27,20 @@ Installing also sets up a pre-commit hook that checks the Node version, then lin
 
 The channel defaults to `tabdealplatform`. Set `NUXT_APARAT_CHANNEL` to list another one (see `.env.example`).
 
-Set `NUXT_PUBLIC_SITE_URL` (for example `https://videos.tabdeal.org`) in production. Canonical links, Open Graph URLs, `robots.txt` and `/sitemap.xml` use it to build absolute URLs. Without it they fall back to the request's host, which is wrong behind a proxy that rewrites `Host`.
+Canonical links, Open Graph URLs, `robots.txt` and `/sitemap.xml` build absolute URLs from the site URL, which defaults to https://tabdeal-frontend-task.vercel.app. Set `NUXT_PUBLIC_SITE_URL` to deploy under another domain.
 
 ## SEO
 
 - Every list page links to itself as canonical, with page 1 as `/`. Search results (`?q=`) are `noindex, follow`.
 - Video pages have Open Graph video tags with the poster as the image, and `VideoObject` JSON-LD with the upload date, duration and embed URL.
 - `/sitemap.xml` is a video sitemap built from the cached channel catalog. `/robots.txt` points to it and keeps crawlers out of `/api/`.
-- HTML is cached with stale-while-revalidate: one minute for the list, five minutes for videos, an hour for the sitemap.
+
+## Caching
+
+- Pages and API responses send `Cache-Control` headers so the CDN caches them with stale-while-revalidate: one minute for the list, five minutes for videos, an hour for the sitemap. On Vercel, the edge network serves them.
+- The server also keeps the channel catalog for one minute and up to 200 videos for five minutes in memory. Concurrent requests share one Aparat call, and when Aparat fails the last good copy is served and the failure is logged.
+- Aparat returns 40 videos per page with a cursor to the next one, so the catalog is read page by page, up to 20 pages. A larger channel is cut off with a warning in the logs.
+- Aparat responses are checked against a schema (`server/lib/aparatSchema.ts`). Videos with an unexpected shape are skipped and logged; a response that does not match at all returns a 502.
 
 ## Development
 
@@ -65,4 +71,4 @@ pnpm preview
 
 ## Vercel
 
-Connect this repo in Vercel. The Nuxt framework preset builds with `pnpm build`. Set `NUXT_PUBLIC_SITE_URL` to the site URL, for example `https://your-site.vercel.app`. Canonical links, Open Graph, `robots.txt`, and `/sitemap.xml` use that value.
+The app is live at https://tabdeal-frontend-task.vercel.app. Connect this repo in Vercel and the Nuxt framework preset builds it with `pnpm build`. To deploy under another domain, set `NUXT_PUBLIC_SITE_URL` to it.
