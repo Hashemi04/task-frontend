@@ -1,82 +1,94 @@
-import { clampPage } from '~/utils/videoParse'
+import type { RouteLocationRaw } from '#vue-router'
+import type { VideoPage } from '~/types/video'
 
-const desktopMinWidth = 1024
-const desktopPageSize = 9
-const mobilePageSize = 6
+export const videoPageSize = 9
 
-export function useVideoPagination(
-  totalCount: MaybeRef<number>,
-  pageSize = useVideoPageSize()
-) {
+export function useRequestedPage() {
   const route = useRoute()
-  const router = useRouter()
 
-  const requestedPage = computed(() => {
+  return computed(() => {
     const value = Number(route.query.page)
     return Number.isInteger(value) && value > 0 ? value : 1
   })
+}
 
-  const pageCount = computed(() => {
-    return Math.max(1, Math.ceil(toValue(totalCount) / pageSize.value))
-  })
+export function useVideoPagination(
+  videoPage: Ref<VideoPage | null | undefined>,
+  cacheKey: (page: number) => string
+) {
+  const route = useRoute()
+  const router = useRouter()
+  const requestedPage = useRequestedPage()
 
-  const currentPage = computed(() =>
-    clampPage(requestedPage.value, pageCount.value)
+  const currentPage = computed(
+    () => videoPage.value?.page ?? requestedPage.value
   )
 
-  async function setPage(nextPage: number) {
-    const page = clampPage(nextPage, pageCount.value)
+  const pageCount = computed(() => {
+    const result = videoPage.value
+    if (!result) return 1
+    return Math.max(1, Math.ceil(result.totalCount / result.perPage))
+  })
 
-    await router.replace({
+  function pageLink(page: number): RouteLocationRaw {
+    return {
       query: {
         ...route.query,
         page: page === 1 ? undefined : String(page),
       },
-    })
+    }
   }
 
   if (import.meta.client) {
-    watch(requestedPage, () => {
-      window.scrollTo({ top: 0, left: 0 })
-    })
+    const nuxtApp = useNuxtApp()
+    const listPath = route.path
+    let restoring = false
+    const onPopState = () => {
+      restoring = true
+    }
 
-    watch(pageCount, (count) => {
-      if (requestedPage.value > count) {
-        setPage(count)
+    onMounted(() => window.addEventListener('popstate', onPopState))
+    onBeforeUnmount(() => window.removeEventListener('popstate', onPopState))
+
+    watch(
+      () => route.fullPath,
+      async () => {
+        if (route.path !== listPath) return
+        if (!restoring) {
+          window.scrollTo({ top: 0, left: 0 })
+          return
+        }
+
+        restoring = false
+        const saved: unknown = window.history.state?.scroll
+        await nextTick()
+        if (isScrollPosition(saved)) {
+          requestAnimationFrame(() => window.scrollTo(saved))
+        }
       }
-    })
+    )
+
+    watch(
+      () => videoPage.value?.page,
+      (page) => {
+        if (page === undefined || page === requestedPage.value) return
+        nuxtApp.payload.data[cacheKey(page)] = videoPage.value
+        router.replace(pageLink(page))
+      },
+      { immediate: true }
+    )
   }
 
-  return { pageSize, currentPage, pageCount, setPage }
+  return { currentPage, pageCount, pageLink }
 }
 
-export function useVideoPageSize() {
-  const pageSize = useState('video-page-size', () => {
-    if (import.meta.server) {
-      const userAgent = useRequestHeaders(['user-agent'])['user-agent'] ?? ''
-      return isMobileUserAgent(userAgent) ? mobilePageSize : desktopPageSize
-    }
-
-    return window.matchMedia(`(min-width: ${desktopMinWidth}px)`).matches
-      ? desktopPageSize
-      : mobilePageSize
-  })
-
-  onMounted(() => {
-    const media = window.matchMedia(`(min-width: ${desktopMinWidth}px)`)
-
-    const update = () => {
-      pageSize.value = media.matches ? desktopPageSize : mobilePageSize
-    }
-
-    update()
-    media.addEventListener('change', update)
-    onScopeDispose(() => media.removeEventListener('change', update))
-  })
-
-  return pageSize
-}
-
-function isMobileUserAgent(userAgent: string) {
-  return /Android|iPhone|iPad|Mobile/i.test(userAgent)
+function isScrollPosition(
+  value: unknown
+): value is { left: number; top: number } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { top?: unknown }).top === 'number' &&
+    typeof (value as { left?: unknown }).left === 'number'
+  )
 }

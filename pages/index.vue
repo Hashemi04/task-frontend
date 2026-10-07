@@ -1,40 +1,55 @@
 <script setup lang="ts">
 import type { VideoPage } from '~/types/video'
 
-const route = useRoute()
-const { query } = useSearchQuery()
-const pageSize = useVideoPageSize()
+definePageMeta({ showSearch: true })
 
-const requestedPage = computed(() => {
-  const value = Number(route.query.page)
-  return Number.isInteger(value) && value > 0 ? value : 1
-})
+const { query } = useSearchQuery()
+const requestedPage = useRequestedPage()
+const cacheKey = (page: number) => `channel-videos-${query.value}-${page}`
 
 const {
   data: videoPage,
   status,
   refresh,
 } = await useAsyncData(
-  () =>
-    `channel-videos-${query.value}-${requestedPage.value}-${pageSize.value}`,
+  () => cacheKey(requestedPage.value),
   () => {
     return $fetch<VideoPage>('/api/videos', {
       query: {
         q: query.value || undefined,
         page: requestedPage.value,
-        perPage: pageSize.value,
+        perPage: videoPageSize,
       },
     })
   },
-  { watch: [query, requestedPage, pageSize] }
+  {
+    getCachedData: (key, nuxtApp) =>
+      nuxtApp.payload.data[key] ?? nuxtApp.static.data[key],
+  }
 )
 
-const totalCount = computed(() => videoPage.value?.totalCount ?? 0)
-const { currentPage, pageCount, setPage } = useVideoPagination(
-  totalCount,
-  pageSize
+const { currentPage, pageCount, pageLink } = useVideoPagination(
+  videoPage,
+  cacheKey
 )
 const visibleVideos = computed(() => videoPage.value?.items ?? [])
+
+const url = useSiteUrl()
+const canonicalUrl = computed(() => {
+  if (query.value) return ''
+  return url(currentPage.value > 1 ? `/?page=${currentPage.value}` : '/')
+})
+
+useSeoMeta({
+  robots: () => (query.value ? 'noindex, follow' : undefined),
+  ogUrl: () => canonicalUrl.value || undefined,
+})
+
+useHead(() => ({
+  link: canonicalUrl.value
+    ? [{ rel: 'canonical', href: canonicalUrl.value }]
+    : [],
+}))
 
 // loading: the request is still pending and nothing has arrived yet
 const isLoading = computed(() => status.value === 'pending' && !videoPage.value)
@@ -42,9 +57,11 @@ const isLoading = computed(() => status.value === 'pending' && !videoPage.value)
 
 <template>
   <section class="mx-auto max-w-6xl px-4 py-6 md:px-6" :aria-busy="isLoading">
+    <h1 class="sr-only">ویدیوهای آموزشی صرافی تبدیل</h1>
+
     <!-- loading -->
     <ul v-if="isLoading" class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <li v-for="index in pageSize" :key="index">
+      <li v-for="index in videoPageSize" :key="index">
         <VideoCardSkeleton />
       </li>
     </ul>
@@ -70,8 +87,8 @@ const isLoading = computed(() => status.value === 'pending' && !videoPage.value)
     <!-- ready -->
     <template v-else>
       <ul class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <li v-for="video in visibleVideos" :key="video.uid">
-          <VideoCard :video="video" />
+        <li v-for="(video, index) in visibleVideos" :key="video.uid">
+          <VideoCard :video="video" :eager="index < 3" />
         </li>
       </ul>
 
@@ -79,7 +96,7 @@ const isLoading = computed(() => status.value === 'pending' && !videoPage.value)
         class="mt-8"
         :page="currentPage"
         :page-count="pageCount"
-        @change="setPage"
+        :page-link="pageLink"
       />
     </template>
   </section>
