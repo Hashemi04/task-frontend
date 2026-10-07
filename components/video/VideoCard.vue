@@ -46,6 +46,7 @@ const loading = computed(() => (props.eager ? 'eager' : 'lazy'))
         :stroke-width="0.6"
       />
       <span
+        v-if="video.durationSeconds > 0"
         class="absolute bottom-4 end-4 rounded-full bg-badge px-2.5 py-1 text-xs text-white"
       >
         {{ durationLabel }}

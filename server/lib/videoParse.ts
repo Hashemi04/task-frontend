@@ -2,10 +2,12 @@ export function numberCount(value: unknown) {
   if (typeof value === 'number' && Number.isFinite(value))
     return Math.round(value)
 
-  const raw = asText(value).replace(/[۰-۹]/g, (digit) =>
-    String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit))
-  )
-  const match = raw.match(/[\d.]+/)
+  const raw = asText(value)
+    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/[,٬]/g, '')
+    .replace(/٫/g, '.')
+  const match = raw.match(/\d+(?:\.\d+)?/)
   if (!match) return 0
 
   const amount = Number(match[0])
@@ -80,14 +82,44 @@ export function posterSrcset(video: Record<string, unknown>) {
     .join(', ')
 }
 
-// Aparat sends Tehran wall-clock time without an offset. Iran has used +03:30
-// all year since 2022, so older summer uploads can be an hour off.
+const tehranOffsetFormat = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Asia/Tehran',
+  timeZoneName: 'longOffset',
+})
+
+function tehranOffsetMinutes(instant: number) {
+  const name = tehranOffsetFormat
+    .formatToParts(new Date(instant))
+    .find((part) => part.type === 'timeZoneName')?.value
+  const match = name?.match(/^GMT([+-])(\d{2}):(\d{2})$/)
+  if (!match) return 210
+  const minutes = Number(match[2]) * 60 + Number(match[3])
+  return match[1] === '-' ? -minutes : minutes
+}
+
+function offsetLabel(minutes: number) {
+  const sign = minutes < 0 ? '-' : '+'
+  const absolute = Math.abs(minutes)
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${sign}${pad(Math.floor(absolute / 60))}:${pad(absolute % 60)}`
+}
+
+// Aparat sends Tehran wall-clock time without an offset, and Iran used
+// daylight saving time (+04:30) in summer until 2022.
 export function isoDate(value: unknown) {
   const text = asText(value)
   if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$/.test(text))
     return text
-  const match = text.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})$/)
-  return match ? `${match[1]}T${match[2]}+03:30` : ''
+  const match = text.match(
+    /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/
+  )
+  if (!match) return ''
+
+  const [, year, month, day, hour, minute, second] = match.map(Number)
+  const wallClock = Date.UTC(year!, month! - 1, day, hour, minute, second)
+  const guess = tehranOffsetMinutes(wallClock)
+  const offset = tehranOffsetMinutes(wallClock - guess * 60_000)
+  return `${text.replace(' ', 'T')}${offsetLabel(offset)}`
 }
 
 export function asText(value: unknown) {

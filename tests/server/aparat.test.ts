@@ -18,13 +18,22 @@ function video(uid: string, title: string) {
   }
 }
 
+const listUrl = 'https://www.aparat.com/api/fa/v1/user/video/list/username'
+const nextPage = (id: number) =>
+  `${listUrl}/tabdeal/perpage/40/nextid/${id}/isnextpage/true`
+
+// Aparat reports `total` as the page size, not the size of the channel.
 function listDocument(
   videos: { type: string; attributes: Record<string, unknown> }[],
-  total: number,
   next = ''
 ) {
   return {
-    data: [{ type: 'list', attributes: { total, link: { next } } }],
+    data: [
+      {
+        type: 'Row',
+        attributes: { total: videos.length, link: next ? { next } : null },
+      },
+    ],
     included: [channel, ...videos],
   }
 }
@@ -50,6 +59,8 @@ async function loadAparat() {
 }
 
 beforeEach(() => {
+  vi.spyOn(console, 'warn').mockImplementation(() => {})
+  vi.spyOn(console, 'error').mockImplementation(() => {})
   fetchMock = vi.fn<Fetch>()
   vi.stubGlobal('$fetch', fetchMock)
   vi.stubGlobal('useRuntimeConfig', () => ({ aparatChannel: 'tabdeal' }))
@@ -62,6 +73,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 describe('fetchChannelPage', () => {
@@ -74,18 +86,23 @@ describe('fetchChannelPage', () => {
 
   it('follows the next links and pages through the whole channel', async () => {
     fetchMock
-      .mockResolvedValueOnce(listDocument(catalog.slice(0, 6), 12, 'page-2'))
-      .mockResolvedValueOnce(listDocument(catalog.slice(6), 12))
+      .mockResolvedValueOnce(listDocument(catalog.slice(0, 6), nextPage(1)))
+      .mockResolvedValueOnce(listDocument(catalog.slice(6)))
     const { fetchChannelPage } = await loadAparat()
 
     const result = await fetchChannelPage({ page: 2, perPage: 5 })
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
-      'https://www.aparat.com/api/fa/v1/user/video/list/username/tabdeal',
+      `${listUrl}/tabdeal`,
       expect.any(Object)
     )
-    expect(fetchMock).toHaveBeenNthCalledWith(2, 'page-2', expect.any(Object))
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      nextPage(1),
+      expect.any(Object)
+    )
+    expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(result.totalCount).toBe(12)
     expect(result.page).toBe(2)
     expect(result.items.map((item) => item.uid)).toEqual([
@@ -99,7 +116,7 @@ describe('fetchChannelPage', () => {
   })
 
   it('filters by title without caring about case', async () => {
-    fetchMock.mockResolvedValueOnce(listDocument(catalog, 12))
+    fetchMock.mockResolvedValueOnce(listDocument(catalog))
     const { fetchChannelPage } = await loadAparat()
 
     const result = await fetchChannelPage({ q: '  BITCOIN ', perPage: 24 })
@@ -111,7 +128,7 @@ describe('fetchChannelPage', () => {
   })
 
   it('clamps the page and the page size', async () => {
-    fetchMock.mockResolvedValueOnce(listDocument(catalog, 12))
+    fetchMock.mockResolvedValueOnce(listDocument(catalog))
     const { fetchChannelPage } = await loadAparat()
 
     expect(await fetchChannelPage({ page: 99, perPage: 5 })).toMatchObject({
@@ -128,15 +145,12 @@ describe('fetchChannelPage', () => {
 
   it('ignores Persian spelling variants when searching', async () => {
     fetchMock.mockResolvedValueOnce(
-      listDocument(
-        [
-          video('a', 'آموزش كيف پول'),
-          video('b', 'خرید بیت‌کوین'),
-          video('c', 'نسخه ۲۰۲۶'),
-          video('d', 'تتر'),
-        ],
-        4
-      )
+      listDocument([
+        video('a', 'آموزش كيف پول'),
+        video('b', 'خرید بیت‌کوین'),
+        video('c', 'نسخه ۲۰۲۶'),
+        video('d', 'تتر'),
+      ])
     )
     const { fetchChannelPage } = await loadAparat()
 
@@ -154,7 +168,7 @@ describe('fetchChannelPage', () => {
     vi.useFakeTimers()
     try {
       fetchMock
-        .mockResolvedValueOnce(listDocument(catalog, 12))
+        .mockResolvedValueOnce(listDocument(catalog))
         .mockRejectedValueOnce(httpError(503))
       const { fetchChannelPage } = await loadAparat()
 
@@ -170,7 +184,7 @@ describe('fetchChannelPage', () => {
 
   it('drops duplicate videos', async () => {
     fetchMock.mockResolvedValueOnce(
-      listDocument([video('a', 'one'), video('a', 'one'), video('b', 'two')], 3)
+      listDocument([video('a', 'one'), video('a', 'one'), video('b', 'two')])
     )
     const { fetchChannelPage } = await loadAparat()
 
@@ -178,7 +192,7 @@ describe('fetchChannelPage', () => {
   })
 
   it('shares one catalog request between concurrent callers and caches it', async () => {
-    fetchMock.mockResolvedValue(listDocument(catalog, 12))
+    fetchMock.mockResolvedValue(listDocument(catalog))
     const { fetchChannelPage } = await loadAparat()
 
     await Promise.all([fetchChannelPage(), fetchChannelPage()])
@@ -189,21 +203,18 @@ describe('fetchChannelPage', () => {
 
   it('keeps descriptions and embed links out of the list response', async () => {
     fetchMock.mockResolvedValueOnce(
-      listDocument(
-        [
-          {
-            type: 'Video',
-            attributes: {
-              ...video('a', 'one').attributes,
-              description: 'متن &laquo;کامل&raquo;',
-              frame:
-                'https://www.aparat.com/video/video/embed/videohash/a/vt/frame',
-              sdate_rss: '2026-09-29 10:00:06',
-            },
+      listDocument([
+        {
+          type: 'Video',
+          attributes: {
+            ...video('a', 'one').attributes,
+            description: 'متن &laquo;کامل&raquo;',
+            frame:
+              'https://www.aparat.com/video/video/embed/videohash/a/vt/frame',
+            sdate_rss: '2026-09-29 10:00:06',
           },
-        ],
-        1
-      )
+        },
+      ])
     )
     const { fetchChannelPage, fetchChannelVideos } = await loadAparat()
 
@@ -227,6 +238,82 @@ describe('fetchChannelPage', () => {
     const { fetchChannelPage } = await loadAparat()
 
     await expect(fetchChannelPage()).rejects.toMatchObject({ statusCode: 502 })
+  })
+
+  it('keeps paging after the first 40 videos', async () => {
+    const page = (start: number) =>
+      Array.from({ length: 40 }, (_, index) =>
+        video(`p${start + index}`, `ویدیو ${start + index}`)
+      )
+    fetchMock
+      .mockResolvedValueOnce(listDocument(page(0), nextPage(1)))
+      .mockResolvedValueOnce(listDocument(page(40), nextPage(2)))
+      .mockResolvedValueOnce(listDocument(page(80)))
+    const { fetchChannelPage } = await loadAparat()
+
+    expect((await fetchChannelPage()).totalCount).toBe(120)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('stops at the page limit and logs that the list is cut off', async () => {
+    let id = 0
+    fetchMock.mockImplementation(async () =>
+      listDocument([video(`v${id}`, 'x')], nextPage(++id))
+    )
+    const { fetchChannelPage } = await loadAparat()
+
+    expect((await fetchChannelPage()).totalCount).toBe(20)
+    expect(fetchMock).toHaveBeenCalledTimes(20)
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('more than 20 pages')
+    )
+  })
+
+  it('does not follow a next link outside Aparat', async () => {
+    fetchMock.mockResolvedValueOnce(
+      listDocument(catalog, 'https://evil.example/list')
+    )
+    const { fetchChannelPage } = await loadAparat()
+
+    expect((await fetchChannelPage()).totalCount).toBe(12)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips and logs videos with an unexpected shape', async () => {
+    fetchMock.mockResolvedValueOnce(
+      listDocument([
+        video('a', 'one'),
+        { type: 'Video', attributes: { uid: 'b', title: 42 } },
+        { type: 'Video', attributes: { title: 'no uid' } },
+      ])
+    )
+    const { fetchChannelPage } = await loadAparat()
+
+    expect((await fetchChannelPage()).items.map((item) => item.uid)).toEqual([
+      'a',
+    ])
+    expect(console.warn).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports a bad gateway and logs when the response shape changes', async () => {
+    fetchMock.mockResolvedValueOnce({ data: 'oops', included: {} })
+    const { fetchChannelPage } = await loadAparat()
+
+    await expect(fetchChannelPage()).rejects.toMatchObject({ statusCode: 502 })
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining('unexpected response')
+    )
+  })
+
+  it('logs upstream failures', async () => {
+    fetchMock.mockRejectedValueOnce(httpError(503))
+    const { fetchChannelPage } = await loadAparat()
+
+    await expect(fetchChannelPage()).rejects.toMatchObject({ statusCode: 503 })
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining('request failed (503)'),
+      expect.any(Error)
+    )
   })
 })
 
@@ -277,7 +364,7 @@ describe('fetchVideoDetail', () => {
 
   it('matches the channel without caring about case', async () => {
     fetchMock.mockResolvedValueOnce(
-      detailDocument({ uid: 'abc', owner_username: 'TabDeal' })
+      detailDocument({ uid: 'abc', title: 'عنوان', owner_username: 'TabDeal' })
     )
     const { fetchVideoDetail } = await loadAparat()
 
@@ -295,15 +382,42 @@ describe('fetchVideoDetail', () => {
     const { fetchVideoDetail } = await loadAparat()
 
     fetchMock.mockRejectedValueOnce(httpError(404))
-    expect(await fetchVideoDetail('abc')).toBeNull()
+    expect(await fetchVideoDetail('missing')).toBeNull()
 
     fetchMock.mockResolvedValueOnce(detailDocument({ uid: 'other' }))
-    expect(await fetchVideoDetail('abc')).toBeNull()
+    expect(await fetchVideoDetail('mismatched')).toBeNull()
 
     fetchMock.mockResolvedValueOnce(
-      detailDocument({ uid: 'abc', deleted: 'yes' })
+      detailDocument({ uid: 'deleted', title: 'x', deleted: 'yes' })
     )
-    expect(await fetchVideoDetail('abc')).toBeNull()
+    expect(await fetchVideoDetail('deleted')).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('caches videos, including missing ones', async () => {
+    fetchMock
+      .mockResolvedValueOnce(detailDocument({ uid: 'abc', title: 'عنوان' }))
+      .mockRejectedValueOnce(httpError(404))
+    const { fetchVideoDetail } = await loadAparat()
+
+    await fetchVideoDetail('abc')
+    await fetchVideoDetail('abc')
+    await fetchVideoDetail('gone')
+    expect(await fetchVideoDetail('gone')).toBeNull()
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports a bad gateway and logs when the video shape changes', async () => {
+    fetchMock.mockResolvedValueOnce(detailDocument({ uid: 'abc', title: 7 }))
+    const { fetchVideoDetail } = await loadAparat()
+
+    await expect(fetchVideoDetail('abc')).rejects.toMatchObject({
+      statusCode: 502,
+    })
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining('unexpected shape')
+    )
   })
 
   it('passes other upstream failures through', async () => {

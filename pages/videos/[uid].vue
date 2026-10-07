@@ -117,7 +117,7 @@ useHead(() => ({
 
       <p
         ref="descriptionRef"
-        class="mt-2 text-sm leading-6 text-white/70"
+        class="mt-2 whitespace-pre-line text-sm leading-6 text-white/70"
         :class="{ 'line-clamp-2': !descriptionExpanded }"
       >
         {{ video.description }}
