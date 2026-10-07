@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { VideoDetail } from '~/types/video'
+import { formatDuration } from '~/utils/formatDuration'
 
 const props = defineProps<{
   video: VideoDetail
@@ -9,10 +10,27 @@ const root = ref<HTMLElement | null>(null)
 const media = ref<HTMLVideoElement | null>(null)
 const playing = ref(false)
 const muted = ref(false)
-const progress = ref(0)
+const currentTime = ref(0)
+const mediaDuration = ref(0)
 const started = ref(false)
 const buffering = ref(false)
 const failed = ref(false)
+const fullscreen = ref(false)
+
+const duration = computed(
+  () => mediaDuration.value || props.video.durationSeconds
+)
+const progress = computed(() =>
+  duration.value ? Math.min(100, (currentTime.value / duration.value) * 100) : 0
+)
+const timeLabel = computed(
+  () =>
+    `${formatDuration(currentTime.value)} / ${formatDuration(duration.value)}`
+)
+const timeText = computed(
+  () =>
+    `${formatDuration(currentTime.value)} از ${formatDuration(duration.value)}`
+)
 
 const unavailable = computed(() => !props.video.playbackUrl)
 const notice = computed(() => {
@@ -27,13 +45,16 @@ function onError() {
   playing.value = false
 }
 
+function retry() {
+  failed.value = false
+  media.value?.load()
+}
+
 function sync() {
   const element = media.value
-  if (!element || !element.duration) {
-    progress.value = 0
-    return
-  }
-  progress.value = (element.currentTime / element.duration) * 100
+  if (!element) return
+  currentTime.value = element.currentTime
+  mediaDuration.value = Number.isFinite(element.duration) ? element.duration : 0
 }
 
 async function togglePlay() {
@@ -45,7 +66,7 @@ async function togglePlay() {
     try {
       await element.play()
     } catch (error) {
-      if (!isInterruptedPlay(error)) throw error
+      if (!isInterruptedPlay(error)) onError()
     }
     return
   }
@@ -67,13 +88,11 @@ function toggleMute() {
   muted.value = element.muted
 }
 
-function seekTo(clientX: number, bar: HTMLElement) {
+function seek(seconds: number) {
   const element = media.value
   if (!element || !element.duration) return
 
-  const rect = bar.getBoundingClientRect()
-  const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
-  element.currentTime = ratio * element.duration
+  element.currentTime = Math.min(element.duration, Math.max(0, seconds))
   started.value = true
   sync()
 }
@@ -84,19 +103,34 @@ function scrub(event: PointerEvent) {
   if (event.type === 'pointermove' && event.buttons !== 1) return
 
   if (event.type === 'pointerdown') bar.setPointerCapture(event.pointerId)
-  seekTo(event.clientX, bar)
+  const rect = bar.getBoundingClientRect()
+  const ratio = Math.min(
+    1,
+    Math.max(0, (event.clientX - rect.left) / rect.width)
+  )
+  seek(ratio * (media.value?.duration ?? 0))
 }
 
 function seekBy(seconds: number) {
-  const element = media.value
-  if (!element || !element.duration) return
+  seek((media.value?.currentTime ?? 0) + seconds)
+}
 
-  element.currentTime = Math.min(
-    element.duration,
-    Math.max(0, element.currentTime + seconds)
-  )
-  started.value = true
-  sync()
+function onSliderKeydown(event: KeyboardEvent) {
+  const element = media.value
+  if (!element) return
+
+  const targets: Record<string, number> = {
+    Home: 0,
+    End: element.duration,
+    ArrowUp: element.currentTime + 5,
+    ArrowDown: element.currentTime - 5,
+  }
+  const target = targets[event.key]
+  if (target === undefined) return
+
+  event.preventDefault()
+  event.stopPropagation()
+  seek(target)
 }
 
 function onKeydown(event: KeyboardEvent) {
@@ -159,6 +193,29 @@ async function toggleFullscreen() {
     // The browser can refuse fullscreen; the player keeps working inline.
   }
 }
+
+function syncFullscreen() {
+  fullscreen.value =
+    !!document.fullscreenElement && document.fullscreenElement === root.value
+}
+
+const enterNativeFullscreen = () => (fullscreen.value = true)
+const exitNativeFullscreen = () => (fullscreen.value = false)
+
+onMounted(() => {
+  document.addEventListener('fullscreenchange', syncFullscreen)
+  media.value?.addEventListener('webkitbeginfullscreen', enterNativeFullscreen)
+  media.value?.addEventListener('webkitendfullscreen', exitNativeFullscreen)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('fullscreenchange', syncFullscreen)
+  media.value?.removeEventListener(
+    'webkitbeginfullscreen',
+    enterNativeFullscreen
+  )
+  media.value?.removeEventListener('webkitendfullscreen', exitNativeFullscreen)
+})
 </script>
 
 <template>
@@ -180,6 +237,7 @@ async function toggleFullscreen() {
       preload="metadata"
       @click="togglePlay"
       @loadedmetadata="sync"
+      @durationchange="sync"
       @timeupdate="sync"
       @play="playing = true"
       @pause="playing = false"
@@ -197,13 +255,15 @@ async function toggleFullscreen() {
       preserveAspectRatio="none"
     />
 
-    <p
+    <div
       v-if="notice"
-      class="absolute inset-0 flex items-center justify-center bg-black/60 px-4 text-center text-sm"
-      role="status"
+      class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/60 px-4 text-center text-sm"
     >
-      {{ notice }}
-    </p>
+      <p role="status">{{ notice }}</p>
+      <BaseButton v-if="failed && !unavailable" @click="retry">
+        تلاش دوباره
+      </BaseButton>
+    </div>
 
     <div
       v-else-if="buffering"
@@ -221,19 +281,25 @@ async function toggleFullscreen() {
       class="absolute inset-x-0 bottom-0 z-10 px-4 pb-3"
       dir="ltr"
     >
-      <button
-        type="button"
-        class="relative block h-1.5 w-full cursor-pointer bg-track"
+      <div
+        role="slider"
+        tabindex="0"
+        class="relative block h-1.5 w-full cursor-pointer touch-none bg-track focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         aria-label="موقعیت پخش"
-        aria-keyshortcuts="ArrowLeft ArrowRight"
+        aria-valuemin="0"
+        :aria-valuemax="Math.round(duration)"
+        :aria-valuenow="Math.round(currentTime)"
+        :aria-valuetext="timeText"
+        aria-keyshortcuts="ArrowLeft ArrowRight Home End"
         @pointerdown="scrub"
         @pointermove="scrub"
+        @keydown="onSliderKeydown"
       >
         <span
           class="absolute inset-y-0 left-0 bg-accent"
           :style="{ width: `${progress}%` }"
         />
-      </button>
+      </div>
 
       <div class="mt-2.5 flex items-center gap-3 text-white">
         <button
@@ -255,14 +321,18 @@ async function toggleFullscreen() {
           <IconVolume class="size-6" :muted="muted" />
         </button>
 
+        <span class="text-xs tabular-nums" aria-hidden="true">
+          {{ timeLabel }}
+        </span>
+
         <button
           type="button"
           class="ms-auto"
-          aria-label="تمام‌صفحه"
+          :aria-label="fullscreen ? 'خروج از تمام‌صفحه' : 'تمام‌صفحه'"
           aria-keyshortcuts="f"
           @click="toggleFullscreen"
         >
-          <IconFullscreen class="size-6" />
+          <IconFullscreen class="size-6" :exit="fullscreen" />
         </button>
       </div>
     </div>

@@ -1,5 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { flushPromises } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import VideoPlayer from '~/components/video/VideoPlayer.vue'
 import type { VideoDetail } from '~/types/video'
 
@@ -96,6 +98,92 @@ describe('VideoPlayer', () => {
 
     expect(play).not.toHaveBeenCalled()
     expect(wrapper.get('video').element.muted).toBe(false)
+  })
+
+  it('shows the time and exposes it on the seek slider', async () => {
+    const wrapper = await mountPlayer({ durationSeconds: 125 })
+    const slider = wrapper.get('[role="slider"]')
+
+    expect(wrapper.text()).toContain('00:00 / 02:05')
+    expect(slider.attributes('aria-valuemax')).toBe('125')
+    expect(slider.attributes('aria-valuetext')).toBe('00:00 از 02:05')
+
+    const video = wrapper.get('video')
+    Object.defineProperty(video.element, 'duration', { value: 200 })
+    video.element.currentTime = 65
+    await video.trigger('timeupdate')
+
+    expect(wrapper.text()).toContain('01:05 / 03:20')
+    expect(slider.attributes('aria-valuenow')).toBe('65')
+  })
+
+  it('jumps to the start and end from the slider', async () => {
+    const wrapper = await mountPlayer()
+    const video = wrapper.get('video')
+    Object.defineProperty(video.element, 'duration', { value: 200 })
+    video.element.currentTime = 50
+    const slider = wrapper.get('[role="slider"]')
+
+    await slider.trigger('keydown', { key: 'End' })
+    expect(video.element.currentTime).toBe(200)
+
+    await slider.trigger('keydown', { key: 'Home' })
+    expect(video.element.currentTime).toBe(0)
+
+    await slider.trigger('keydown', { key: 'ArrowUp' })
+    expect(video.element.currentTime).toBe(5)
+  })
+
+  it('switches the fullscreen button when fullscreen opens and closes', async () => {
+    const wrapper = await mountPlayer()
+    const region = wrapper.get('[role="region"]').element
+    let current: Element | null = null
+    Object.defineProperty(document, 'fullscreenElement', {
+      configurable: true,
+      get: () => current,
+    })
+
+    try {
+      current = region
+      document.dispatchEvent(new Event('fullscreenchange'))
+      await nextTick()
+      expect(wrapper.find('[aria-label="خروج از تمام‌صفحه"]').exists()).toBe(
+        true
+      )
+
+      current = null
+      document.dispatchEvent(new Event('fullscreenchange'))
+      await nextTick()
+      expect(wrapper.find('[aria-label="تمام‌صفحه"]').exists()).toBe(true)
+    } finally {
+      Reflect.deleteProperty(document, 'fullscreenElement')
+    }
+  })
+
+  it('reloads the video after a failure when retrying', async () => {
+    const load = vi
+      .spyOn(HTMLMediaElement.prototype, 'load')
+      .mockImplementation(() => {})
+    const wrapper = await mountPlayer()
+
+    await wrapper.get('video').trigger('error')
+    await wrapper.get('button').trigger('click')
+
+    expect(load).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[role="status"]').exists()).toBe(false)
+    expect(wrapper.find('[aria-label="پخش"]').exists()).toBe(true)
+  })
+
+  it('shows the error instead of throwing when the file cannot play', async () => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockRejectedValue(
+      new DOMException('bad file', 'NotSupportedError')
+    )
+    const wrapper = await mountPlayer()
+
+    await wrapper.get('[aria-label="پخش"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('[role="status"]').text()).toBe('پخش ویدیو انجام نشد')
   })
 
   it('switches the button label while playing', async () => {
