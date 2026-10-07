@@ -45,12 +45,19 @@ async function togglePlay() {
     try {
       await element.play()
     } catch (error) {
-      if (!(error instanceof DOMException)) throw error
+      if (!isInterruptedPlay(error)) throw error
     }
     return
   }
 
   element.pause()
+}
+
+function isInterruptedPlay(error: unknown) {
+  return (
+    error instanceof DOMException &&
+    (error.name === 'NotAllowedError' || error.name === 'AbortError')
+  )
 }
 
 function toggleMute() {
@@ -92,20 +99,8 @@ function seekBy(seconds: number) {
   sync()
 }
 
-function isTyping(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false
-  const tag = target.tagName
-  return (
-    tag === 'INPUT' ||
-    tag === 'TEXTAREA' ||
-    tag === 'SELECT' ||
-    target.isContentEditable
-  )
-}
-
 function onKeydown(event: KeyboardEvent) {
-  if (event.metaKey || event.ctrlKey || event.altKey || isTyping(event.target))
-    return
+  if (notice.value || event.metaKey || event.ctrlKey || event.altKey) return
   if (
     event.target instanceof HTMLButtonElement &&
     (event.key === ' ' || event.key === 'Enter')
@@ -142,28 +137,39 @@ function onKeydown(event: KeyboardEvent) {
   }
 }
 
-onMounted(() => {
-  window.addEventListener('keydown', onKeydown)
-  onScopeDispose(() => window.removeEventListener('keydown', onKeydown))
-})
+type WebkitVideoElement = HTMLVideoElement & {
+  webkitEnterFullscreen?: () => void
+}
 
-function toggleFullscreen() {
+async function toggleFullscreen() {
   const element = root.value
+  const video = media.value as WebkitVideoElement | null
   if (!element) return
 
-  if (document.fullscreenElement) {
-    document.exitFullscreen()
-    return
+  try {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen()
+    } else if (typeof element.requestFullscreen === 'function') {
+      await element.requestFullscreen()
+    } else {
+      // iPhone Safari only supports native fullscreen on the video element.
+      video?.webkitEnterFullscreen?.()
+    }
+  } catch {
+    // The browser can refuse fullscreen; the player keeps working inline.
   }
-
-  element.requestFullscreen()
 }
 </script>
 
 <template>
   <div
     ref="root"
-    class="relative aspect-video overflow-hidden rounded-lg border border-edge bg-placeholder"
+    tabindex="0"
+    role="region"
+    aria-label="پخش‌کننده ویدیو"
+    aria-keyshortcuts="Space k ArrowLeft ArrowRight m f"
+    class="relative aspect-video overflow-hidden rounded-lg border border-edge bg-placeholder focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+    @keydown="onKeydown"
   >
     <video
       ref="media"
@@ -178,6 +184,7 @@ function toggleFullscreen() {
       @play="playing = true"
       @pause="playing = false"
       @ended="playing = false"
+      @volumechange="muted = media?.muted ?? false"
       @waiting="buffering = true"
       @playing="buffering = false"
       @canplay="buffering = false"
