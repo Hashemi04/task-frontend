@@ -1,8 +1,12 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-// Cached renders only see the headers listed here, and pages build absolute
-// URLs from the host when `siteUrl` is not set.
-const hostHeaders = ['host', 'x-forwarded-host', 'x-forwarded-proto']
-
+// Shared caching is left to the CDN: Nitro's in-memory route cache is
+// per-instance on serverless hosts, and on Vercel it becomes ISR that never
+// expires.
+function cdnCache(seconds: number) {
+  return {
+    'cache-control': `public, max-age=0, s-maxage=${seconds}, stale-while-revalidate=${seconds * 10}`,
+  }
+}
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: process.env.NODE_ENV === 'development' },
@@ -16,13 +20,15 @@ export default defineNuxtConfig({
   runtimeConfig: {
     aparatChannel: 'tabdealplatform',
     public: {
-      siteUrl: '',
+      siteUrl: 'https://tabdeal-frontend-task.vercel.app',
     },
   },
   routeRules: {
-    '/': { cache: { swr: true, maxAge: 60, varies: hostHeaders } },
-    '/videos/**': { cache: { swr: true, maxAge: 300, varies: hostHeaders } },
-    '/sitemap.xml': { cache: { swr: true, maxAge: 3600, varies: hostHeaders } },
+    '/': { headers: cdnCache(60) },
+    '/videos/**': { headers: cdnCache(300) },
+    '/api/videos': { headers: cdnCache(60) },
+    '/api/videos/**': { headers: cdnCache(300) },
+    '/sitemap.xml': { headers: cdnCache(3600) },
   },
   app: {
     head: {
