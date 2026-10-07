@@ -3,6 +3,13 @@ import AppHeader from '~/components/app/AppHeader.vue'
 
 useHead({
   title: 'ویدیوهای صرافی تبدیل',
+  meta: [
+    {
+      key: 'description',
+      name: 'description',
+      content: 'ویدیوهای آموزشی کانال صرافی ارز دیجیتال تبدیل',
+    },
+  ],
 })
 </script>
 

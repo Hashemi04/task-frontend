@@ -1,5 +1,4 @@
 @import '@fontsource/vazirmatn/400.css';
-@import '@fontsource/vazirmatn/500.css';
 @import '@fontsource/vazirmatn/700.css';
 
 @tailwind base;
@@ -9,5 +8,50 @@
 @layer base {
   body {
     @apply bg-ink font-sans text-white antialiased;
+  }
+}
+
+@layer components {
+  .glow-search {
+    background-image: radial-gradient(
+      140% 100% at 50% 34%,
+      rgba(240, 186, 11, 0.95) 0%,
+      rgba(240, 186, 11, 0.5) 24%,
+      rgba(240, 186, 11, 0.22) 52%,
+      transparent 80%
+    );
+    background-size: 100% 192px;
+    background-repeat: no-repeat;
+  }
+
+  .glow-header {
+    background-image: radial-gradient(
+      120% 140% at 50% 50%,
+      rgba(240, 186, 11, 0.95) 0%,
+      rgba(240, 186, 11, 0.4) 40%,
+      transparent 72%
+    );
+    background-repeat: no-repeat;
+  }
+
+  @screen md {
+    .glow-search {
+      background-image: radial-gradient(
+        90% 100% at 84% 30%,
+        rgba(240, 186, 11, 0.95) 0%,
+        rgba(240, 186, 11, 0.42) 28%,
+        transparent 68%
+      );
+      background-size: 100% 220px;
+    }
+
+    .glow-header {
+      background-image: radial-gradient(
+        70% 140% at 84% 40%,
+        rgba(240, 186, 11, 0.9) 0%,
+        rgba(240, 186, 11, 0.35) 34%,
+        transparent 68%
+      );
+    }
   }
 }

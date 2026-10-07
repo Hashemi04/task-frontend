@@ -23,8 +23,11 @@ const heading = computed(() => {
 })
 
 const detail = computed(() => {
-  if (!isMissing.value) return 'بارگذاری صفحه انجام نشد. کمی بعد دوباره تلاش کنید.'
-  return isVideo.value ? 'این ویدیو در کانال تبدیل نیست.' : 'این آدرس در تبدیل نیست.'
+  if (!isMissing.value)
+    return 'بارگذاری صفحه انجام نشد. کمی بعد دوباره تلاش کنید.'
+  return isVideo.value
+    ? 'این ویدیو در کانال تبدیل نیست.'
+    : 'این آدرس در تبدیل نیست.'
 })
 
 useHead({
@@ -39,15 +42,15 @@ function goHome() {
 <template>
   <div class="min-h-screen bg-ink">
     <AppHeader />
-    <main class="mx-auto flex max-w-6xl flex-col items-center px-4 py-16 text-center md:px-6">
+    <main
+      class="mx-auto flex max-w-6xl flex-col items-center px-4 py-16 text-center md:px-6"
+    >
       <p class="text-6xl font-bold text-[#F0B90B]">{{ statusCode }}</p>
       <h1 class="mt-4 text-lg font-bold">{{ heading }}</h1>
       <p class="mt-2 max-w-md text-sm leading-6 text-white/60">
         {{ detail }}
       </p>
-      <BaseButton class="mt-6" @click="goHome">
-        بازگشت به ویدیوها
-      </BaseButton>
+      <BaseButton class="mt-6" @click="goHome"> بازگشت به ویدیوها </BaseButton>
     </main>
   </div>
 </template>

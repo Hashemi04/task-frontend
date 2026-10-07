@@ -1,26 +1,40 @@
 <script setup lang="ts">
-import type { VideoSummary } from "../../types/video";
-import { formatDuration } from "../../utils/formatDuration";
+import type { VideoSummary } from '~/types/video'
+import { formatCount } from '~/utils/formatCount'
+import { formatDuration } from '~/utils/formatDuration'
 
-const props = defineProps<{
-  video: VideoSummary;
-}>();
+const props = withDefaults(
+  defineProps<{
+    video: VideoSummary
+    eager?: boolean
+  }>(),
+  {
+    eager: false,
+  }
+)
 
 const durationLabel = computed(() =>
-  formatDuration(props.video.durationSeconds),
-);
+  formatDuration(props.video.durationSeconds)
+)
+const loading = computed(() => (props.eager ? 'eager' : 'lazy'))
 </script>
 
 <template>
   <NuxtLink
     :to="`/videos/${video.uid}`"
-    class="block rounded-lg border border-[#404244] bg-[#2C2E30] p-4"
+    class="block rounded-lg border border-surface bg-panel p-4"
   >
-    <div class="relative aspect-video overflow-hidden rounded-lg bg-[#4F5154]">
+    <div
+      class="relative aspect-video overflow-hidden rounded-lg bg-placeholder"
+    >
       <img
         v-if="video.posterUrl"
         :src="video.posterUrl"
         :alt="video.title"
+        width="640"
+        height="360"
+        :loading="loading"
+        decoding="async"
         class="h-full w-full object-cover"
       />
       <IconEmptyPoster
@@ -30,7 +44,7 @@ const durationLabel = computed(() =>
         :stroke-width="0.6"
       />
       <span
-        class="absolute bottom-4 end-4 rounded-full bg-[#2F3337] px-2.5 py-1 text-xs text-white"
+        class="absolute bottom-4 end-4 rounded-full bg-badge px-2.5 py-1 text-xs text-white"
       >
         {{ durationLabel }}
       </span>
@@ -44,13 +58,17 @@ const durationLabel = computed(() =>
       <img
         :src="video.profilePhotoUrl"
         alt=""
+        width="20"
+        height="20"
+        :loading="loading"
+        decoding="async"
         class="h-5 w-5 shrink-0 rounded-full object-cover"
       />
       {{ video.senderName }}
     </p>
 
     <p class="mt-2 text-sm text-white/60">
-      {{ video.visitCount }} بازدید - {{ video.publishedAtLabel }}
+      {{ formatCount(video.visitCount) }} بازدید - {{ video.publishedAtLabel }}
     </p>
   </NuxtLink>
 </template>

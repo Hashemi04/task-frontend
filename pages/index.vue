@@ -1,26 +1,55 @@
 <script setup lang="ts">
-import type { VideoPage } from '../types/video'
+import type { VideoPage } from '~/types/video'
 
-const { data: videoPage, status, refresh } = await useAsyncData('channel-videos', () => {
-  return $fetch<VideoPage>('/api/videos')
-})
+definePageMeta({ showSearch: true })
 
 const { query } = useSearchQuery()
+const requestedPage = useRequestedPage()
+const cacheKey = (page: number) => `channel-videos-${query.value}-${page}`
 
-const filteredVideos = computed(() => {
-  const items = videoPage.value?.items ?? []
-  const q = query.value.trim().toLowerCase()
-  if (!q) return items
-  return items.filter((video) => video.title.toLowerCase().includes(q))
+const {
+  data: videoPage,
+  status,
+  refresh,
+} = await useAsyncData(
+  () => cacheKey(requestedPage.value),
+  () => {
+    return $fetch<VideoPage>('/api/videos', {
+      query: {
+        q: query.value || undefined,
+        page: requestedPage.value,
+        perPage: videoPageSize,
+      },
+    })
+  },
+  {
+    getCachedData: (key, nuxtApp) =>
+      nuxtApp.payload.data[key] ?? nuxtApp.static.data[key],
+  }
+)
+
+const { currentPage, pageCount, pageLink } = useVideoPagination(
+  videoPage,
+  cacheKey
+)
+const visibleVideos = computed(() => videoPage.value?.items ?? [])
+
+const url = useSiteUrl()
+const canonicalUrl = computed(() => {
+  if (query.value) return ''
+  return url(currentPage.value > 1 ? `/?page=${currentPage.value}` : '/')
 })
 
-const totalCount = computed(() => filteredVideos.value.length)
-const { pageSize, currentPage, pageCount, setPage } = useVideoPagination(totalCount)
-
-const visibleVideos = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  return filteredVideos.value.slice(start, start + pageSize.value)
+useSeoMeta({
+  robots: () => (query.value ? 'noindex, follow' : undefined),
+  ogUrl: () => canonicalUrl.value || undefined,
 })
+
+useHead(() => ({
+  link: canonicalUrl.value
+    ? [{ rel: 'canonical', href: canonicalUrl.value }]
+    : [],
+}))
 
 // loading: the request is still pending and nothing has arrived yet
 const isLoading = computed(() => status.value === 'pending' && !videoPage.value)
@@ -28,31 +57,38 @@ const isLoading = computed(() => status.value === 'pending' && !videoPage.value)
 
 <template>
   <section class="mx-auto max-w-6xl px-4 py-6 md:px-6" :aria-busy="isLoading">
+    <h1 class="sr-only">ویدیوهای آموزشی صرافی تبدیل</h1>
+
     <!-- loading -->
     <ul v-if="isLoading" class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <li v-for="index in pageSize" :key="index">
+      <li v-for="index in videoPageSize" :key="index">
         <VideoCardSkeleton />
       </li>
     </ul>
 
     <!-- error -->
-    <div v-else-if="status === 'error'" class="flex flex-col items-center gap-4 py-16 text-center" role="alert">
+    <div
+      v-else-if="status === 'error'"
+      class="flex flex-col items-center gap-4 py-16 text-center"
+      role="alert"
+    >
       <p>بارگذاری ویدیوها انجام نشد</p>
-      <BaseButton @click="refresh()">
-        تلاش دوباره
-      </BaseButton>
+      <BaseButton @click="refresh()"> تلاش دوباره </BaseButton>
     </div>
 
     <!-- empty -->
-    <p v-else-if="!filteredVideos.length" class="py-16 text-center text-white/70">
+    <p
+      v-else-if="!visibleVideos.length"
+      class="py-16 text-center text-white/70"
+    >
       ویدیویی برای نمایش وجود ندارد
     </p>
 
     <!-- ready -->
     <template v-else>
       <ul class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <li v-for="video in visibleVideos" :key="video.uid">
-          <VideoCard :video="video" />
+        <li v-for="(video, index) in visibleVideos" :key="video.uid">
+          <VideoCard :video="video" :eager="index < 3" />
         </li>
       </ul>
 
@@ -60,7 +96,7 @@ const isLoading = computed(() => status.value === 'pending' && !videoPage.value)
         class="mt-8"
         :page="currentPage"
         :page-count="pageCount"
-        @change="setPage"
+        :page-link="pageLink"
       />
     </template>
   </section>

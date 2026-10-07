@@ -1,43 +1,53 @@
 <script setup lang="ts">
-export type ButtonVariant = 'primary' | 'ghost' | 'page'
-export type ButtonType = 'button' | 'submit' | 'reset'
+import type { RouteLocationRaw } from '#vue-router'
 
-interface Props {
-  variant?: ButtonVariant
-  type?: ButtonType
-  active?: boolean
+type ButtonVariant = 'primary' | 'ghost' | 'page'
+
+const props = withDefaults(
+  defineProps<{
+    variant?: ButtonVariant
+    type?: 'button' | 'submit' | 'reset'
+    active?: boolean
+    disabled?: boolean
+    to?: RouteLocationRaw
+  }>(),
+  {
+    variant: 'primary',
+    type: 'button',
+    active: false,
+    disabled: false,
+    to: undefined,
+  }
+)
+
+const variantClasses: Record<ButtonVariant, string> = {
+  primary:
+    'h-12 gap-1 rounded bg-accent px-4 text-sm font-bold text-ink focus-visible:ring-white',
+  ghost:
+    'size-8 rounded-full text-lg text-white/70 hover:text-white focus-visible:ring-accent disabled:text-white/20',
+  page: 'size-8 rounded-full text-sm focus-visible:ring-accent',
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  variant: 'primary',
-  type: 'button',
-  active: false,
-})
-
-const variantClass = computed(() => {
-  switch (props.variant) {
-    // primary: yellow action, used by search and retry
-    case 'primary':
-      return 'rounded bg-[#F0B90B] px-4 py-3 text-sm font-bold text-ink focus:ring-2 focus:ring-white'
-    // ghost: pagination arrows
-    case 'ghost':
-      return 'size-8 text-lg text-white/50'
-    // page: page number, yellow when it is the current page
-    case 'page':
-      return props.active
-        ? 'size-8 rounded-full bg-[#F0B90B] text-sm font-bold text-ink'
-        : 'size-8 rounded-full text-sm text-white/50'
-    default:
-      return ''
-  }
-})
+const classes = computed(() => [
+  'inline-flex shrink-0 items-center justify-center whitespace-nowrap focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed',
+  variantClasses[props.variant],
+  props.variant === 'page' &&
+    (props.active
+      ? 'bg-accent font-bold text-ink'
+      : 'text-white/70 hover:text-white'),
+])
 </script>
 
 <template>
-  <button
-    :type="type"
-    :class="`${variantClass} inline-flex shrink-0 items-center justify-center whitespace-nowrap focus:outline-none disabled:cursor-default`"
+  <NuxtLink
+    v-if="to && !disabled"
+    :to="to"
+    :class="classes"
+    :aria-current="active ? 'page' : undefined"
   >
+    <slot />
+  </NuxtLink>
+  <button v-else :type="type" :disabled="disabled" :class="classes">
     <slot />
   </button>
 </template>
