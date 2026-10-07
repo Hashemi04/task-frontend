@@ -24,6 +24,13 @@ describe('numberCount', () => {
     expect(numberCount('2 میلیون')).toBe(2_000_000)
   })
 
+  it('reads thousands separators and the Persian decimal point', () => {
+    expect(numberCount('1,234')).toBe(1234)
+    expect(numberCount('۱٬۲۳۴٬۵۶۷')).toBe(1_234_567)
+    expect(numberCount('٢٬٥٠٠')).toBe(2500)
+    expect(numberCount('۱٫۵ هزار')).toBe(1500)
+  })
+
   it('returns 0 when there is no number', () => {
     expect(numberCount('ندارد')).toBe(0)
     expect(numberCount(Number.NaN)).toBe(0)
@@ -82,6 +89,12 @@ describe('plainText', () => {
 describe('isoDate', () => {
   it('adds the Tehran offset to Aparat wall-clock times', () => {
     expect(isoDate('2026-09-29 10:00:06')).toBe('2026-09-29T10:00:06+03:30')
+  })
+
+  it('uses daylight saving time for summer uploads before 2023', () => {
+    expect(isoDate('2020-07-01 12:00:00')).toBe('2020-07-01T12:00:00+04:30')
+    expect(isoDate('2021-01-10 08:00:00')).toBe('2021-01-10T08:00:00+03:30')
+    expect(isoDate('2023-07-01 12:00:00')).toBe('2023-07-01T12:00:00+03:30')
   })
 
   it('keeps dates that already carry an offset', () => {
