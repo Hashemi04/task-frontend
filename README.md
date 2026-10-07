@@ -62,3 +62,7 @@ CI runs the same checks and a production build on every pull request.
 pnpm build
 pnpm preview
 ```
+
+## Vercel
+
+Connect this repo in Vercel. The Nuxt framework preset builds with `pnpm build`. Set `NUXT_PUBLIC_SITE_URL` to the site URL, for example `https://your-site.vercel.app`. Canonical links, Open Graph, `robots.txt`, and `/sitemap.xml` use that value.
