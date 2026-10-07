@@ -1,3 +1,5 @@
+import { toPersianDigits } from '~/utils/formatDigits'
+
 export function formatDuration(totalSeconds: number) {
   const safeSeconds =
     Number.isFinite(totalSeconds) && totalSeconds > 0
@@ -8,7 +10,9 @@ export function formatDuration(totalSeconds: number) {
   const seconds = safeSeconds % 60
   const pad = (value: number) => String(value).padStart(2, '0')
 
-  return hours > 0
-    ? `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
-    : `${pad(minutes)}:${pad(seconds)}`
+  const label =
+    hours > 0
+      ? `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
+      : `${pad(minutes)}:${pad(seconds)}`
+  return toPersianDigits(label)
 }

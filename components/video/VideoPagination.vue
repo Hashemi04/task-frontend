@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { RouteLocationRaw } from '#vue-router'
+import { toPersianDigits } from '~/utils/formatDigits'
 import { paginationItems } from '~/utils/pagination'
 
 const props = defineProps<{
@@ -51,7 +52,7 @@ const items = computed(() => paginationItems(props.page, props.pageCount))
         :active="item.page === page"
         :to="pageLink(item.page)"
       >
-        {{ item.page }}
+        {{ toPersianDigits(item.page) }}
       </BaseButton>
     </template>
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { NuxtError } from '#app'
+import { toPersianDigits } from '~/utils/formatDigits'
 
 const props = defineProps<{
   error: NuxtError
@@ -46,7 +47,9 @@ const detail = computed(() => {
 })
 
 useHead({
-  title: computed(() => `${statusCode.value} - ${heading.value}`),
+  title: computed(
+    () => `${toPersianDigits(statusCode.value)} - ${heading.value}`
+  ),
 })
 
 function goHome() {
@@ -60,7 +63,9 @@ function goHome() {
     <main
       class="mx-auto flex max-w-6xl flex-col items-center px-4 py-16 text-center md:px-6"
     >
-      <p class="text-6xl font-bold text-accent">{{ statusCode }}</p>
+      <p class="text-6xl font-bold text-accent">
+        {{ toPersianDigits(statusCode) }}
+      </p>
       <h1 class="mt-4 text-lg font-bold">{{ heading }}</h1>
       <p class="mt-2 max-w-md text-sm leading-6 text-white/60">
         {{ detail }}

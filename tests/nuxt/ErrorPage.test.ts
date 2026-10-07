@@ -14,6 +14,7 @@ describe('error page', () => {
     const wrapper = await mountError({ resource: 'video' })
 
     expect(wrapper.get('h1').text()).toBe('ویدیو پیدا نشد')
+    expect(wrapper.text()).toContain('۴۰۴')
   })
 
   it('reads the resource from server-serialized data', async () => {

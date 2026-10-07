@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { VideoSummary } from '~/types/video'
 import { formatCount } from '~/utils/formatCount'
+import { toPersianDigits } from '~/utils/formatDigits'
 import { formatDuration } from '~/utils/formatDuration'
 
 const props = withDefaults(
@@ -63,7 +64,8 @@ const loading = computed(() => (props.eager ? 'eager' : 'lazy'))
     </p>
 
     <p class="mt-2 text-sm text-white/60">
-      {{ formatCount(video.visitCount) }} بازدید - {{ video.publishedAtLabel }}
+      {{ formatCount(video.visitCount) }} بازدید -
+      {{ toPersianDigits(video.publishedAtLabel) }}
     </p>
   </NuxtLink>
 </template>

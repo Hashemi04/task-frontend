@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { VideoDetail } from '~/types/video'
 import { formatCount } from '~/utils/formatCount'
+import { toPersianDigits } from '~/utils/formatDigits'
 import { videoJsonLd } from '~/utils/videoJsonLd'
 
 const route = useRoute()
@@ -106,7 +107,7 @@ useHead(() => ({
       <p class="mt-3 flex flex-wrap items-center gap-x-2 text-xs text-white/70">
         <span>{{ formatCount(video.visitCount) }} بازدید</span>
         <span aria-hidden="true">•</span>
-        <span>{{ video.publishedAtLabel }}</span>
+        <span>{{ toPersianDigits(video.publishedAtLabel) }}</span>
         <template v-if="video.tags.length">
           <span aria-hidden="true">•</span>
           <span v-for="tag in video.tags" :key="tag" class="text-link">

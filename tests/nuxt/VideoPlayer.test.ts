@@ -104,16 +104,16 @@ describe('VideoPlayer', () => {
     const wrapper = await mountPlayer({ durationSeconds: 125 })
     const slider = wrapper.get('[role="slider"]')
 
-    expect(wrapper.text()).toContain('00:00 / 02:05')
+    expect(wrapper.text()).toContain('۰۰:۰۰ / ۰۲:۰۵')
     expect(slider.attributes('aria-valuemax')).toBe('125')
-    expect(slider.attributes('aria-valuetext')).toBe('00:00 از 02:05')
+    expect(slider.attributes('aria-valuetext')).toBe('۰۰:۰۰ از ۰۲:۰۵')
 
     const video = wrapper.get('video')
     Object.defineProperty(video.element, 'duration', { value: 200 })
     video.element.currentTime = 65
     await video.trigger('timeupdate')
 
-    expect(wrapper.text()).toContain('01:05 / 03:20')
+    expect(wrapper.text()).toContain('۰۱:۰۵ / ۰۳:۲۰')
     expect(slider.attributes('aria-valuenow')).toBe('65')
   })
 

@@ -20,7 +20,16 @@ describe('VideoCard', () => {
   it('shows the duration', async () => {
     const wrapper = await mountSuspended(VideoCard, { props: { video } })
 
-    expect(wrapper.text()).toContain('02:05')
+    expect(wrapper.text()).toContain('۰۲:۰۵')
+    expect(wrapper.text()).toContain('۱٬۲۰۰ بازدید')
+  })
+
+  it('shows Aparat dates with Persian digits', async () => {
+    const wrapper = await mountSuspended(VideoCard, {
+      props: { video: { ...video, publishedAtLabel: '1 هفته پیش' } },
+    })
+
+    expect(wrapper.text()).toContain('۱ هفته پیش')
   })
 
   it('hides the duration when Aparat does not send one', async () => {
@@ -28,6 +37,6 @@ describe('VideoCard', () => {
       props: { video: { ...video, durationSeconds: 0 } },
     })
 
-    expect(wrapper.text()).not.toContain('00:00')
+    expect(wrapper.text()).not.toContain('۰۰:۰۰')
   })
 })

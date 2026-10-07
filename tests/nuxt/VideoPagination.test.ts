@@ -13,14 +13,14 @@ describe('VideoPagination', () => {
     const current = wrapper.get('[aria-current="page"]')
     expect(wrapper.findAll('[aria-current]')).toHaveLength(1)
     expect(current.element.tagName).toBe('A')
-    expect(current.text()).toBe('6')
+    expect(current.text()).toBe('۶')
     expect(current.attributes('href')).toContain('page=6')
 
     const numbers = wrapper
       .findAll('a')
       .map((link) => link.text())
-      .filter((text) => /^\d+$/.test(text))
-    expect(numbers).toEqual(['4', '5', '6', '7', '8'])
+      .filter((text) => /^[۰-۹]+$/.test(text))
+    expect(numbers).toEqual(['۴', '۵', '۶', '۷', '۸'])
     expect(wrapper.text().match(/\.\.\./g)).toHaveLength(2)
   })
 
