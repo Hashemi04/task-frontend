@@ -16,6 +16,17 @@ const started = ref(false)
 const buffering = ref(false)
 const failed = ref(false)
 const fullscreen = ref(false)
+const idle = ref(false)
+const hoveringChrome = ref(false)
+const focused = ref(false)
+
+const hideDelayMs = 2_500
+let hideTimer: ReturnType<typeof setTimeout> | undefined
+
+const chromeVisible = computed(() => {
+  if (!playing.value) return true
+  return !idle.value || hoveringChrome.value || focused.value
+})
 
 const duration = computed(
   () => mediaDuration.value || props.video.durationSeconds
@@ -38,6 +49,39 @@ const notice = computed(() => {
   if (failed.value) return 'پخش ویدیو انجام نشد'
   return ''
 })
+
+function showChrome() {
+  idle.value = false
+  scheduleHide()
+}
+
+function scheduleHide() {
+  clearTimeout(hideTimer)
+  if (!playing.value) return
+  hideTimer = setTimeout(() => {
+    idle.value = true
+  }, hideDelayMs)
+}
+
+watch(playing, (isPlaying) => {
+  if (isPlaying) {
+    scheduleHide()
+    return
+  }
+  idle.value = false
+  clearTimeout(hideTimer)
+})
+
+function onFocusOut(event: FocusEvent) {
+  const next = event.relatedTarget
+  if (next instanceof Node && root.value?.contains(next)) return
+  focused.value = false
+}
+
+function onPlay() {
+  playing.value = true
+  started.value = true
+}
 
 function onError() {
   failed.value = true
@@ -134,6 +178,7 @@ function onSliderKeydown(event: KeyboardEvent) {
 }
 
 function onKeydown(event: KeyboardEvent) {
+  showChrome()
   if (notice.value || event.metaKey || event.ctrlKey || event.altKey) return
   if (
     event.target instanceof HTMLButtonElement &&
@@ -209,6 +254,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  clearTimeout(hideTimer)
   document.removeEventListener('fullscreenchange', syncFullscreen)
   media.value?.removeEventListener(
     'webkitbeginfullscreen',
@@ -226,7 +272,10 @@ onBeforeUnmount(() => {
     aria-label="پخش‌کننده ویدیو"
     aria-keyshortcuts="Space k ArrowLeft ArrowRight m f"
     class="relative aspect-video overflow-hidden rounded-lg border border-edge bg-placeholder focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+    @pointermove="showChrome"
     @keydown="onKeydown"
+    @focusin="focused = true"
+    @focusout="onFocusOut"
   >
     <video
       ref="media"
@@ -239,7 +288,7 @@ onBeforeUnmount(() => {
       @loadedmetadata="sync"
       @durationchange="sync"
       @timeupdate="sync"
-      @play="playing = true"
+      @play="onPlay"
       @pause="playing = false"
       @ended="playing = false"
       @volumechange="muted = media?.muted ?? false"
@@ -267,7 +316,7 @@ onBeforeUnmount(() => {
 
     <div
       v-else-if="buffering"
-      class="pointer-events-none absolute inset-0 flex items-center justify-center"
+      class="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"
       role="status"
       aria-label="در حال بارگذاری"
     >
@@ -278,13 +327,16 @@ onBeforeUnmount(() => {
 
     <div
       v-if="!notice"
-      class="absolute inset-x-0 bottom-0 z-10 px-4 pb-3"
+      class="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/70 to-transparent px-4 pb-3 pt-10 transition-opacity duration-300"
       dir="ltr"
+      :class="chromeVisible ? 'opacity-100' : 'pointer-events-none opacity-0'"
+      @pointerenter="hoveringChrome = true"
+      @pointerleave="hoveringChrome = false"
     >
       <div
         role="slider"
         tabindex="0"
-        class="relative block h-1.5 w-full cursor-pointer touch-none bg-track focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        class="group relative flex h-5 w-full cursor-pointer items-center touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         aria-label="موقعیت پخش"
         aria-valuemin="0"
         :aria-valuemax="Math.round(duration)"
@@ -296,9 +348,13 @@ onBeforeUnmount(() => {
         @keydown="onSliderKeydown"
       >
         <span
-          class="absolute inset-y-0 left-0 bg-accent"
-          :style="{ width: `${progress}%` }"
-        />
+          class="relative block h-1.5 w-full overflow-hidden rounded-full bg-track transition-[height] group-hover:h-2.5 group-focus-visible:h-2.5"
+        >
+          <span
+            class="absolute inset-y-0 left-0 bg-accent"
+            :style="{ width: `${progress}%` }"
+          />
+        </span>
       </div>
 
       <div class="mt-2.5 flex items-center gap-3 text-white">

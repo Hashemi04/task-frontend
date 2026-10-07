@@ -65,6 +65,48 @@ describe('VideoPlayer', () => {
     expect(wrapper.find('[aria-label="در حال بارگذاری"]').exists()).toBe(false)
   })
 
+  it('hides the controls after idle while playing, and shows them on move', async () => {
+    vi.useFakeTimers()
+    try {
+      const wrapper = await mountPlayer()
+      await wrapper.get('video').trigger('play')
+      await nextTick()
+
+      const chrome = wrapper.get('[dir="ltr"]')
+      expect(chrome.classes()).toContain('opacity-100')
+
+      await vi.advanceTimersByTimeAsync(2_500)
+      await nextTick()
+      expect(chrome.classes()).toContain('opacity-0')
+
+      await wrapper.get('[role="region"]').trigger('pointermove')
+      await nextTick()
+      expect(chrome.classes()).toContain('opacity-100')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps the controls visible while paused and while they are hovered', async () => {
+    vi.useFakeTimers()
+    try {
+      const wrapper = await mountPlayer()
+      await wrapper.get('video').trigger('play')
+      await wrapper.get('[dir="ltr"]').trigger('pointerenter')
+      await vi.advanceTimersByTimeAsync(2_500)
+      await nextTick()
+      expect(wrapper.get('[dir="ltr"]').classes()).toContain('opacity-100')
+
+      await wrapper.get('[dir="ltr"]').trigger('pointerleave')
+      await wrapper.get('video').trigger('pause')
+      await vi.advanceTimersByTimeAsync(2_500)
+      await nextTick()
+      expect(wrapper.get('[dir="ltr"]').classes()).toContain('opacity-100')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('starts playback from the play button and survives a blocked play', async () => {
     const play = vi
       .spyOn(HTMLMediaElement.prototype, 'play')
