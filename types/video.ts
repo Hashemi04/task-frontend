@@ -2,8 +2,10 @@ export interface VideoSummary {
   uid: string
   title: string
   posterUrl: string
+  posterSrcset: string
   durationSeconds: number
   visitCount: number
+  publishedAt: string
   publishedAtLabel: string
   senderName: string
   profilePhotoUrl: string
@@ -15,6 +17,7 @@ export interface VideoDetail extends VideoSummary {
   followerCount: number
   tags: string[]
   playbackUrl: string
+  embedUrl: string
 }
 
 export interface VideoPage {

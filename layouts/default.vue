@@ -1,22 +1,28 @@
 <script setup lang="ts">
-import AppHeader from '~/components/app/AppHeader.vue'
+const route = useRoute()
+const url = useSiteUrl()
 
-useHead({
-  title: 'ویدیوهای صرافی تبدیل',
-  meta: [
-    {
-      key: 'description',
-      name: 'description',
-      content: 'ویدیوهای آموزشی کانال صرافی ارز دیجیتال تبدیل',
-    },
-  ],
+const title = 'ویدیوهای صرافی تبدیل'
+const description = 'ویدیوهای آموزشی کانال صرافی ارز دیجیتال تبدیل'
+
+useSeoMeta({
+  title,
+  description,
+  ogSiteName: 'صرافی تبدیل',
+  ogLocale: 'fa_IR',
+  ogType: 'website',
+  ogTitle: title,
+  ogDescription: description,
+  ogImage: url('/og-image.png'),
+  ogImageAlt: title,
+  twitterCard: 'summary_large_image',
 })
 </script>
 
 <template>
   <div class="flex min-h-screen flex-col bg-ink">
-    <AppHeader />
-    <main class="flex-1 bg-[#404244]">
+    <AppHeader :show-search="route.meta.showSearch === true" />
+    <main class="flex-1 bg-surface">
       <slot />
     </main>
   </div>

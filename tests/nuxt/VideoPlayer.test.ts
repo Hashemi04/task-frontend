@@ -7,8 +7,10 @@ const baseVideo: VideoDetail = {
   uid: 'abc',
   title: 'عنوان',
   posterUrl: '',
+  posterSrcset: '',
   durationSeconds: 60,
   visitCount: 1,
+  publishedAt: '',
   publishedAtLabel: 'امروز',
   senderName: 'تبدیل',
   profilePhotoUrl: '',
@@ -17,6 +19,7 @@ const baseVideo: VideoDetail = {
   followerCount: 0,
   tags: [],
   playbackUrl: 'https://caspian.asset.aparat.com/video/720.mp4',
+  embedUrl: '',
 }
 
 function mountPlayer(video: Partial<VideoDetail> = {}) {
@@ -69,6 +72,30 @@ describe('VideoPlayer', () => {
     await wrapper.get('[aria-label="پخش"]').trigger('click')
 
     expect(play).toHaveBeenCalledTimes(1)
+  })
+
+  it('handles shortcuts on the player only', async () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue(undefined)
+    const wrapper = await mountPlayer()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }))
+    expect(play).not.toHaveBeenCalled()
+
+    await wrapper.get('[role="region"]').trigger('keydown', { key: ' ' })
+    expect(play).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores shortcuts while a playback message is shown', async () => {
+    const play = vi.spyOn(HTMLMediaElement.prototype, 'play')
+    const wrapper = await mountPlayer({ playbackUrl: '' })
+
+    await wrapper.get('[role="region"]').trigger('keydown', { key: ' ' })
+    await wrapper.get('[role="region"]').trigger('keydown', { key: 'm' })
+
+    expect(play).not.toHaveBeenCalled()
+    expect(wrapper.get('video').element.muted).toBe(false)
   })
 
   it('switches the button label while playing', async () => {

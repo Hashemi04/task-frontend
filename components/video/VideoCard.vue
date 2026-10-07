@@ -22,7 +22,7 @@ const loading = computed(() => (props.eager ? 'eager' : 'lazy'))
 <template>
   <NuxtLink
     :to="`/videos/${video.uid}`"
-    class="block rounded-lg border border-surface bg-panel p-4"
+    class="block rounded-lg border border-surface bg-panel p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
   >
     <div
       class="relative aspect-video overflow-hidden rounded-lg bg-placeholder"
@@ -30,7 +30,9 @@ const loading = computed(() => (props.eager ? 'eager' : 'lazy'))
       <img
         v-if="video.posterUrl"
         :src="video.posterUrl"
-        :alt="video.title"
+        :srcset="video.posterSrcset || undefined"
+        sizes="(min-width: 1024px) 330px, calc(100vw - 64px)"
+        alt=""
         width="640"
         height="360"
         :loading="loading"
@@ -55,15 +57,7 @@ const loading = computed(() => (props.eager ? 'eager' : 'lazy'))
     </h2>
 
     <p class="mt-3 flex items-center gap-2 text-sm text-white/80">
-      <img
-        :src="video.profilePhotoUrl"
-        alt=""
-        width="20"
-        height="20"
-        :loading="loading"
-        decoding="async"
-        class="h-5 w-5 shrink-0 rounded-full object-cover"
-      />
+      <ChannelAvatar :src="video.profilePhotoUrl" size="sm" :eager="eager" />
       {{ video.senderName }}
     </p>
 

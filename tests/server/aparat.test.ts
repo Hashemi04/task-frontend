@@ -4,7 +4,11 @@ type Fetch = (url: string) => Promise<unknown>
 
 const channel = {
   type: 'channel',
-  attributes: { displayName: 'تبدیل', avatar: 'https://example.com/a.jpg' },
+  attributes: {
+    username: 'tabdeal',
+    displayName: 'تبدیل',
+    avatar: 'https://example.com/a.jpg',
+  },
 }
 
 function video(uid: string, title: string) {
@@ -15,7 +19,7 @@ function video(uid: string, title: string) {
 }
 
 function listDocument(
-  videos: ReturnType<typeof video>[],
+  videos: { type: string; attributes: Record<string, unknown> }[],
   total: number,
   next = ''
 ) {
@@ -122,6 +126,48 @@ describe('fetchChannelPage', () => {
     })
   })
 
+  it('ignores Persian spelling variants when searching', async () => {
+    fetchMock.mockResolvedValueOnce(
+      listDocument(
+        [
+          video('a', 'آموزش كيف پول'),
+          video('b', 'خرید بیت‌کوین'),
+          video('c', 'نسخه ۲۰۲۶'),
+          video('d', 'تتر'),
+        ],
+        4
+      )
+    )
+    const { fetchChannelPage } = await loadAparat()
+
+    const uids = async (q: string) =>
+      (await fetchChannelPage({ q })).items.map((item) => item.uid)
+
+    expect(await uids('کیف پول')).toEqual(['a'])
+    expect(await uids('اموزش')).toEqual(['a'])
+    expect(await uids('بیت کوین')).toEqual(['b'])
+    expect(await uids('بیتکوین')).toEqual(['b'])
+    expect(await uids('2026')).toEqual(['c'])
+  })
+
+  it('serves the last catalog when Aparat fails after the cache expires', async () => {
+    vi.useFakeTimers()
+    try {
+      fetchMock
+        .mockResolvedValueOnce(listDocument(catalog, 12))
+        .mockRejectedValueOnce(httpError(503))
+      const { fetchChannelPage } = await loadAparat()
+
+      await fetchChannelPage()
+      vi.advanceTimersByTime(61_000)
+
+      expect((await fetchChannelPage()).totalCount).toBe(12)
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('drops duplicate videos', async () => {
     fetchMock.mockResolvedValueOnce(
       listDocument([video('a', 'one'), video('a', 'one'), video('b', 'two')], 3)
@@ -141,6 +187,41 @@ describe('fetchChannelPage', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps descriptions and embed links out of the list response', async () => {
+    fetchMock.mockResolvedValueOnce(
+      listDocument(
+        [
+          {
+            type: 'Video',
+            attributes: {
+              ...video('a', 'one').attributes,
+              description: 'متن &laquo;کامل&raquo;',
+              frame:
+                'https://www.aparat.com/video/video/embed/videohash/a/vt/frame',
+              sdate_rss: '2026-09-29 10:00:06',
+            },
+          },
+        ],
+        1
+      )
+    )
+    const { fetchChannelPage, fetchChannelVideos } = await loadAparat()
+
+    const [item] = (await fetchChannelPage()).items
+    expect(item).not.toHaveProperty('description')
+    expect(item).not.toHaveProperty('embedUrl')
+    expect(item?.publishedAt).toBe('2026-09-29T10:00:06+03:30')
+
+    expect(await fetchChannelVideos()).toMatchObject([
+      {
+        uid: 'a',
+        description: 'متن «کامل»',
+        embedUrl:
+          'https://www.aparat.com/video/video/embed/videohash/a/vt/frame',
+      },
+    ])
+  })
+
   it('reports a bad gateway when Aparat rejects the list', async () => {
     fetchMock.mockRejectedValueOnce(httpError(404))
     const { fetchChannelPage } = await loadAparat()
@@ -158,6 +239,9 @@ describe('fetchVideoDetail', () => {
         description: 'توضیح',
         like_cnt: '1.5 هزار',
         tags: ['btc', '', 3],
+        sdate_real: '2026-09-29 10:00:06',
+        frame_src:
+          'https://www.aparat.com/video/video/embed/videohash/abc/vt/frame',
       })
     )
     const { fetchVideoDetail } = await loadAparat()
@@ -170,7 +254,34 @@ describe('fetchVideoDetail', () => {
       followerCount: 7,
       tags: ['btc'],
       senderName: 'تبدیل',
+      publishedAt: '2026-09-29T10:00:06+03:30',
+      embedUrl:
+        'https://www.aparat.com/video/video/embed/videohash/abc/vt/frame',
     })
+  })
+
+  it('rejects a video from another channel', async () => {
+    fetchMock.mockResolvedValueOnce({
+      data: {
+        type: 'video',
+        attributes: { uid: 'abc', owner_username: 'scam' },
+      },
+      included: [
+        { type: 'channel', attributes: { username: 'scam', displayName: 'x' } },
+      ],
+    })
+    const { fetchVideoDetail } = await loadAparat()
+
+    expect(await fetchVideoDetail('abc')).toBeNull()
+  })
+
+  it('matches the channel without caring about case', async () => {
+    fetchMock.mockResolvedValueOnce(
+      detailDocument({ uid: 'abc', owner_username: 'TabDeal' })
+    )
+    const { fetchVideoDetail } = await loadAparat()
+
+    expect(await fetchVideoDetail('abc')).toMatchObject({ uid: 'abc' })
   })
 
   it('rejects an invalid uid without calling Aparat', async () => {

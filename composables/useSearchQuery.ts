@@ -10,7 +10,7 @@ export function useSearchQuery() {
   async function submitSearch(value: string) {
     const q = value.trim()
 
-    await router.replace({
+    await router.push({
       query: {
         ...route.query,
         q: q || undefined,
